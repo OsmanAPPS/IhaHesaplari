@@ -89,7 +89,7 @@
             };
 
             for (const [title, key] of Object.entries(sections)) {
-                panel.innerHTML += createSection(title, params[key]);
+                panel.innerHTML += createSection(title, params[key], key);
             }
 
             // Add event listeners to all inputs to trigger redraw
@@ -152,18 +152,20 @@
             ctx.translate(view.x, view.y);
             const scale = view.width / Math.max(params.fuselage.length, params.wing.span);
 
+            // Scaled dimensions
             const f_len = params.fuselage.length * scale;
             const f_diam = params.fuselage.diameter * scale;
+            const f_tail_diam = params.fuselage.tailDiameter * scale;
             const w_span = params.wing.span * scale;
             const w_root = params.wing.rootChord * scale;
             const w_tip = params.wing.tipChord * scale;
             const w_pos = params.wing.position * scale;
-            const w_sweep = Math.tan(params.wing.sweep * Math.PI / 180) * (w_span / 2);
+            const w_sweep = Math.tan(params.wing.sweep * Math.PI / 180) * (w_span / 2 - f_diam / 2);
             const hs_span = params.horizontalStab.span * scale;
             const hs_root = params.horizontalStab.rootChord * scale;
             const hs_tip = params.horizontalStab.tipChord * scale;
             const hs_pos = params.horizontalStab.position * scale;
-            const hs_sweep = Math.tan(params.horizontalStab.sweep * Math.PI / 180) * (hs_span / 2);
+            const hs_sweep = Math.tan(params.horizontalStab.sweep * Math.PI / 180) * (hs_span / 2 - f_tail_diam / 2);
 
             const centerY = view.height / 2;
 
@@ -171,40 +173,40 @@
             ctx.strokeRect(0, centerY - f_diam / 2, f_len, f_diam);
 
             // Wing
-            ctx.beginPath();
-            ctx.moveTo(w_pos, centerY - w_root/2);
-            ctx.lineTo(w_pos + w_sweep, centerY - w_span/2);
-            ctx.lineTo(w_pos + w_sweep + w_tip, centerY - w_span/2);
-            ctx.lineTo(w_pos + w_root, centerY - w_root/2);
+            ctx.beginPath(); // Right Wing
+            ctx.moveTo(w_pos, centerY - f_diam / 2);
+            ctx.lineTo(w_pos + w_sweep, centerY - w_span / 2);
+            ctx.lineTo(w_pos + w_sweep + w_tip, centerY - w_span / 2);
+            ctx.lineTo(w_pos + w_root, centerY - f_diam / 2);
             ctx.closePath();
             ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(w_pos, centerY + w_root/2);
-            ctx.lineTo(w_pos + w_sweep, centerY + w_span/2);
-            ctx.lineTo(w_pos + w_sweep + w_tip, centerY + w_span/2);
-            ctx.lineTo(w_pos + w_root, centerY + w_root/2);
+            ctx.beginPath(); // Left Wing
+            ctx.moveTo(w_pos, centerY + f_diam / 2);
+            ctx.lineTo(w_pos + w_sweep, centerY + w_span / 2);
+            ctx.lineTo(w_pos + w_sweep + w_tip, centerY + w_span / 2);
+            ctx.lineTo(w_pos + w_root, centerY + f_diam / 2);
             ctx.closePath();
             ctx.stroke();
 
             // Horizontal Stab
-            ctx.beginPath();
-            ctx.moveTo(hs_pos, centerY - hs_root / 2);
-            ctx.lineTo(hs_pos + hs_sweep, centerY - hs_span/2);
-            ctx.lineTo(hs_pos + hs_sweep + hs_tip, centerY - hs_span/2);
-            ctx.lineTo(hs_pos + hs_root, centerY - hs_root/2);
+            ctx.beginPath(); // Right Stab
+            ctx.moveTo(hs_pos, centerY - f_tail_diam / 2);
+            ctx.lineTo(hs_pos + hs_sweep, centerY - hs_span / 2);
+            ctx.lineTo(hs_pos + hs_sweep + hs_tip, centerY - hs_span / 2);
+            ctx.lineTo(hs_pos + hs_root, centerY - f_tail_diam / 2);
             ctx.closePath();
             ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(hs_pos, centerY + hs_root / 2);
+            ctx.beginPath(); // Left Stab
+            ctx.moveTo(hs_pos, centerY + f_tail_diam / 2);
             ctx.lineTo(hs_pos + hs_sweep, centerY + hs_span/2);
             ctx.lineTo(hs_pos + hs_sweep + hs_tip, centerY + hs_span/2);
-            ctx.lineTo(hs_pos + hs_root, centerY + hs_root/2);
+            ctx.lineTo(hs_pos + hs_root, centerY + f_tail_diam / 2);
             ctx.closePath();
             ctx.stroke();
 
             // Dimensions
             drawDimension(ctx, 0, centerY + f_diam, f_len, centerY + f_diam, `Gövde Uzunluğu: ${params.fuselage.length} mm`);
-            drawDimension(ctx, w_pos + w_sweep + w_tip, centerY - w_span/2 - 20, w_pos + w_sweep + w_tip, centerY + w_span/2 + 20, `Kanat Açıklığı: ${params.wing.span} mm`);
+            drawDimension(ctx, w_pos + w_sweep, centerY - w_span/2 - 20, w_pos + w_sweep, centerY + w_span/2 + 20, `Kanat Açıklığı: ${params.wing.span} mm`);
 
             ctx.restore();
         }
@@ -280,7 +282,7 @@
             ctx.restore();
         }
 
-        function createSection(title, params) {
+        function createSection(title, params, sectionKey) {
             let fields = '';
             for (const [key, value] of Object.entries(params)) {
                 fields += `
@@ -291,7 +293,7 @@
                 `;
             }
             return `
-                <div class="input-section">
+                <div class="input-section" id="${sectionKey}_section">
                     <h4>${title}</h4>
                     <div class="input-grid">${fields}</div>
                 </div>
