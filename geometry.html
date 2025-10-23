@@ -105,72 +105,68 @@
 
             const material = new THREE.MeshStandardMaterial({ color: 0x95a5a6, side: THREE.DoubleSide });
 
-            // Fuselage
+            // Fuselage (X=length, Y=span, Z=up)
             const fuselageGeom = new THREE.CylinderGeometry(params.fuselage.diameter / 2, params.fuselage.tailDiameter / 2, params.fuselage.length, 32);
             const fuselageMesh = new THREE.Mesh(fuselageGeom, material);
-            fuselageMesh.rotation.z = Math.PI / 2;
+            fuselageMesh.rotation.z = Math.PI / 2; // Align cylinder with X axis
             fuselageMesh.position.x = params.fuselage.length / 2;
             aircraftGroup.add(fuselageMesh);
 
             // --- Wings ---
-            const wingShape = createWingShape(params.wing.rootChord, params.wing.tipChord, params.wing.span / 2, params.wing.sweep);
+            const wingGroup = new THREE.Group();
+            const wingShape = createWingShape(params.wing.rootChord, params.wing.tipChord, params.wing.span / 2 - params.fuselage.diameter / 2, params.wing.sweep);
             const wingExtrudeSettings = { depth: params.wing.thickness / 100 * params.wing.rootChord, bevelEnabled: false };
+            const wingGeom = new THREE.ExtrudeGeometry(wingShape, wingExtrudeSettings);
+            wingGeom.rotateX(Math.PI / 2); // Orient flat wing to be horizontal
 
-            const rightWingGeom = new THREE.ExtrudeGeometry(wingShape, wingExtrudeSettings);
-            const rightWing = new THREE.Mesh(rightWingGeom, material);
-            rightWing.rotation.x = -Math.PI / 2;
-            rightWing.position.set(params.wing.position, params.fuselage.diameter / 2, 0);
-            rightWing.rotation.y = -(params.wing.dihedral * Math.PI / 180);
-            aircraftGroup.add(rightWing);
+            const rightWing = new THREE.Mesh(wingGeom, material);
+            rightWing.position.y = params.fuselage.diameter / 2;
 
-            const leftWingGeom = new THREE.ExtrudeGeometry(wingShape, wingExtrudeSettings);
-            const leftWing = new THREE.Mesh(leftWingGeom, material);
-            leftWing.rotation.x = -Math.PI / 2;
-            leftWing.scale.y = -1;
-            leftWing.position.set(params.wing.position, -params.fuselage.diameter / 2, 0);
-            leftWing.rotation.y = (params.wing.dihedral * Math.PI / 180);
-            aircraftGroup.add(leftWing);
+            const leftWing = new THREE.Mesh(wingGeom.clone(), material);
+            leftWing.scale.y = -1; // Mirror geometry for the left side
+            leftWing.position.y = -params.fuselage.diameter / 2;
+
+            wingGroup.add(rightWing, leftWing);
+            wingGroup.position.x = params.wing.position;
+            wingGroup.rotation.x = (params.wing.dihedral * Math.PI / 180); // Apply dihedral to the whole group
+            aircraftGroup.add(wingGroup);
 
             // --- Horizontal Stabilizer ---
-            const hsShape = createWingShape(params.horizontalStab.rootChord, params.horizontalStab.tipChord, params.horizontalStab.span / 2, params.horizontalStab.sweep);
+            const hsGroup = new THREE.Group();
+            const hsShape = createWingShape(params.horizontalStab.rootChord, params.horizontalStab.tipChord, params.horizontalStab.span / 2 - params.fuselage.tailDiameter / 2, params.horizontalStab.sweep);
             const hsExtrudeSettings = { depth: params.horizontalStab.thickness / 100 * params.horizontalStab.rootChord, bevelEnabled: false };
+            const hsGeom = new THREE.ExtrudeGeometry(hsShape, hsExtrudeSettings);
+            hsGeom.rotateX(Math.PI / 2);
 
-            const rightHs = new THREE.Mesh(new THREE.ExtrudeGeometry(hsShape, hsExtrudeSettings), material);
-            rightHs.rotation.x = -Math.PI/2;
-            rightHs.position.set(params.horizontalStab.position, params.fuselage.tailDiameter / 2, 0);
-            aircraftGroup.add(rightHs);
+            const rightHs = new THREE.Mesh(hsGeom, material);
+            rightHs.position.y = params.fuselage.tailDiameter / 2;
 
-            const leftHs = new THREE.Mesh(new THREE.ExtrudeGeometry(hsShape, hsExtrudeSettings), material);
-            leftHs.rotation.x = -Math.PI/2;
+            const leftHs = new THREE.Mesh(hsGeom.clone(), material);
             leftHs.scale.y = -1;
-            leftHs.position.set(params.horizontalStab.position, -params.fuselage.tailDiameter / 2, 0);
-            aircraftGroup.add(leftHs);
+            leftHs.position.y = -params.fuselage.tailDiameter / 2;
+
+            hsGroup.add(rightHs, leftHs);
+            hsGroup.position.x = params.horizontalStab.position;
+            aircraftGroup.add(hsGroup);
 
             // --- Vertical Stabilizer ---
-            const vsShape = new THREE.Shape();
-            const vsSweepOffset = Math.tan(params.verticalStab.sweep * Math.PI / 180) * params.verticalStab.height;
-            vsShape.moveTo(0, 0);
-            vsShape.lineTo(vsSweepOffset, params.verticalStab.height);
-            vsShape.lineTo(vsSweepOffset + params.verticalStab.tipChord, params.verticalStab.height);
-            vsShape.lineTo(params.verticalStab.rootChord, 0);
-            vsShape.closePath();
-
+            const vsShape = createWingShape(params.verticalStab.rootChord, params.verticalStab.tipChord, params.verticalStab.height, params.verticalStab.sweep);
             const vsExtrudeSettings = { depth: params.verticalStab.thickness / 100 * params.verticalStab.rootChord, bevelEnabled: false };
             const vsGeom = new THREE.ExtrudeGeometry(vsShape, vsExtrudeSettings);
+
             const verticalStab = new THREE.Mesh(vsGeom, material);
             verticalStab.position.set(params.verticalStab.position, 0, params.fuselage.tailDiameter / 2);
-            verticalStab.rotation.y = Math.PI / 2;
-            verticalStab.position.z -= (params.verticalStab.thickness / 100 * params.verticalStab.rootChord)/2;
+            verticalStab.position.y -= (params.verticalStab.thickness / 100 * params.verticalStab.rootChord) / 2;
             aircraftGroup.add(verticalStab);
         }
 
-        function createWingShape(rootChord, tipChord, semiSpan, sweep) {
+        function createWingShape(rootChord, tipChord, length, sweep) {
             const shape = new THREE.Shape();
-            const sweepOffset = Math.tan(sweep * Math.PI / 180) * semiSpan;
+            const sweepOffset = Math.tan(sweep * Math.PI / 180) * length;
             shape.moveTo(0, 0);
-            shape.lineTo(sweepOffset, semiSpan);
-            shape.lineTo(sweepOffset + tipChord, semiSpan);
             shape.lineTo(rootChord, 0);
+            shape.lineTo(sweepOffset + tipChord, length);
+            shape.lineTo(sweepOffset, length);
             shape.closePath();
             return shape;
         }
