@@ -1,0 +1,302 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometri Görselleştirici - İHA Tasarım Aracı</title>
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --light-gray: #f8f9fa;
+            --gray-border: #dee2e6;
+            --text-dark: #212529;
+            --text-light: #6c757d;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; margin: 0; background-color: var(--light-gray); }
+        .sidebar { width: 250px; background: #ffffff; border-right: 1px solid var(--gray-border); padding: 20px; height: 100vh; position: fixed; overflow-y: auto; }
+        .main-content { margin-left: 270px; flex-grow: 1; padding: 20px; }
+        .container { display: flex; gap: 30px; }
+        .input-panel { flex: 1; }
+        .drawing-panel { flex: 2; }
+        .input-section { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .input-section h4 { margin-top: 0; border-bottom: 1px solid var(--gray-border); padding-bottom: 10px; }
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group { display: flex; flex-direction: column; }
+        label { margin-bottom: 5px; font-size: 0.9rem; color: var(--text-light); }
+        input { padding: 8px; border: 1px solid var(--gray-border); border-radius: 4px; }
+        canvas { border: 1px solid var(--gray-border); background: #fff; }
+        .sidebar-nav a { display: block; padding: 10px; color: var(--text-dark); text-decoration: none; border-radius: 5px; margin-bottom: 5px; }
+        .sidebar-nav a:hover, .sidebar-nav a.active { background-color: var(--primary-color); color: #fff; }
+        h1, h3 { color: var(--text-dark); }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h3>Navigasyon</h3>
+        <nav class="sidebar-nav">
+            <a href="index.html">Hesaplayıcı</a>
+            <a href="geometry.html" class="active">Geometri Görselleştirici</a>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <h1>Geometri Görselleştirici</h1>
+        <p>Uçağınızın geometrik parametrelerini girin ve teknik çizimleri anında görün.</p>
+
+        <div class="container">
+            <div class="input-panel" id="input-panel">
+                <!-- Geometrik Girdi Alanları Buraya Eklenecek -->
+            </div>
+            <div class="drawing-panel">
+                <h3>3 Görünümlü Teknik Resim</h3>
+                <canvas id="threeViewCanvas" width="800" height="600"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = {
+                fuselage: {
+                    length: 1200, noseLength: 250, tailLength: 450,
+                    diameter: 150, tailDiameter: 50
+                },
+                wing: {
+                    span: 1800, rootChord: 250, tipChord: 180,
+                    sweep: 10, dihedral: 5, thickness: 12, // in percent
+                    position: 500 // from nose
+                },
+                horizontalStab: {
+                    span: 600, rootChord: 150, tipChord: 100,
+                    sweep: 15, thickness: 9,
+                    position: 1050 // from nose
+                },
+                verticalStab: {
+                    height: 300, rootChord: 200, tipChord: 120,
+                    sweep: 25, thickness: 9,
+                    position: 1000 // from nose
+                }
+            };
+
+            const panel = document.getElementById('input-panel');
+            const sections = {
+                'Gövde': 'fuselage',
+                'Ana Kanat': 'wing',
+                'Yatay Stabilizatör': 'horizontalStab',
+                'Dikey Stabilizatör': 'verticalStab'
+            };
+
+            for (const [title, key] of Object.entries(sections)) {
+                panel.innerHTML += createSection(title, params[key]);
+            }
+
+            // Add event listeners to all inputs to trigger redraw
+            panel.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', drawAircraft);
+            });
+
+            drawAircraft(); // Initial draw
+        });
+
+        function getParams() {
+            const paramStructure = {
+                fuselage: {}, wing: {}, horizontalStab: {}, verticalStab: {}
+            };
+            for (const section in paramStructure) {
+                const sectionElement = document.getElementById(section + '_section');
+                if (sectionElement) {
+                    sectionElement.querySelectorAll('input').forEach(input => {
+                        paramStructure[section][input.id] = parseFloat(input.value) || 0;
+                    });
+                }
+            }
+            return paramStructure;
+        }
+
+        function drawAircraft() {
+            const params = getParams();
+            const canvas = document.getElementById('threeViewCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#34495e';
+            ctx.fillStyle = '#7f8c8d';
+            ctx.lineWidth = 1;
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+
+            const topView = { x: 50, y: 50, width: 700, height: 200 };
+            const sideView = { x: 50, y: 300, width: 700, height: 200 };
+            const frontView = { x: 50, y: 550, width: 350, height: 200 };
+
+            drawTopView(ctx, topView, params);
+            drawSideView(ctx, sideView, params);
+            drawFrontView(ctx, frontView, params);
+        }
+
+        function drawDimension(ctx, x1, y1, x2, y2, label) {
+            ctx.save();
+            ctx.strokeStyle = '#c0392b';
+            ctx.fillStyle = '#c0392b';
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.fillText(label, (x1 + x2) / 2, (y1 + y2) / 2 - 5);
+            ctx.restore();
+        }
+
+        function drawTopView(ctx, view, params) {
+            ctx.save();
+            ctx.translate(view.x, view.y);
+            const scale = view.width / Math.max(params.fuselage.length, params.wing.span);
+
+            const f_len = params.fuselage.length * scale;
+            const f_diam = params.fuselage.diameter * scale;
+            const w_span = params.wing.span * scale;
+            const w_root = params.wing.rootChord * scale;
+            const w_tip = params.wing.tipChord * scale;
+            const w_pos = params.wing.position * scale;
+            const w_sweep = Math.tan(params.wing.sweep * Math.PI / 180) * (w_span / 2);
+            const hs_span = params.horizontalStab.span * scale;
+            const hs_root = params.horizontalStab.rootChord * scale;
+            const hs_tip = params.horizontalStab.tipChord * scale;
+            const hs_pos = params.horizontalStab.position * scale;
+            const hs_sweep = Math.tan(params.horizontalStab.sweep * Math.PI / 180) * (hs_span / 2);
+
+            const centerY = view.height / 2;
+
+            // Fuselage
+            ctx.strokeRect(0, centerY - f_diam / 2, f_len, f_diam);
+
+            // Wing
+            ctx.beginPath();
+            ctx.moveTo(w_pos, centerY - w_root/2);
+            ctx.lineTo(w_pos + w_sweep, centerY - w_span/2);
+            ctx.lineTo(w_pos + w_sweep + w_tip, centerY - w_span/2);
+            ctx.lineTo(w_pos + w_root, centerY - w_root/2);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(w_pos, centerY + w_root/2);
+            ctx.lineTo(w_pos + w_sweep, centerY + w_span/2);
+            ctx.lineTo(w_pos + w_sweep + w_tip, centerY + w_span/2);
+            ctx.lineTo(w_pos + w_root, centerY + w_root/2);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Horizontal Stab
+            ctx.beginPath();
+            ctx.moveTo(hs_pos, centerY - hs_root / 2);
+            ctx.lineTo(hs_pos + hs_sweep, centerY - hs_span/2);
+            ctx.lineTo(hs_pos + hs_sweep + hs_tip, centerY - hs_span/2);
+            ctx.lineTo(hs_pos + hs_root, centerY - hs_root/2);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(hs_pos, centerY + hs_root / 2);
+            ctx.lineTo(hs_pos + hs_sweep, centerY + hs_span/2);
+            ctx.lineTo(hs_pos + hs_sweep + hs_tip, centerY + hs_span/2);
+            ctx.lineTo(hs_pos + hs_root, centerY + hs_root/2);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Dimensions
+            drawDimension(ctx, 0, centerY + f_diam, f_len, centerY + f_diam, `Gövde Uzunluğu: ${params.fuselage.length} mm`);
+            drawDimension(ctx, w_pos + w_sweep + w_tip, centerY - w_span/2 - 20, w_pos + w_sweep + w_tip, centerY + w_span/2 + 20, `Kanat Açıklığı: ${params.wing.span} mm`);
+
+            ctx.restore();
+        }
+
+        function drawSideView(ctx, view, params) {
+            ctx.save();
+            ctx.translate(view.x, view.y);
+            const scale = view.width / params.fuselage.length;
+            const f_len = params.fuselage.length * scale;
+            const f_diam = params.fuselage.diameter * scale;
+            const vs_h = params.verticalStab.height * scale;
+            const vs_root = params.verticalStab.rootChord * scale;
+            const vs_tip = params.verticalStab.tipChord * scale;
+            const vs_pos = params.verticalStab.position * scale;
+            const vs_sweep = Math.tan(params.verticalStab.sweep * Math.PI / 180) * vs_h;
+
+            const groundY = view.height - 30;
+
+            // Fuselage
+            ctx.strokeRect(0, groundY - f_diam, f_len, f_diam);
+
+            // Vertical Stab
+            ctx.beginPath();
+            ctx.moveTo(vs_pos, groundY - f_diam);
+            ctx.lineTo(vs_pos + vs_sweep, groundY - f_diam - vs_h);
+            ctx.lineTo(vs_pos + vs_sweep + vs_tip, groundY - f_diam - vs_h);
+            ctx.lineTo(vs_pos + vs_root, groundY - f_diam);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Dimensions
+            drawDimension(ctx, vs_pos + vs_sweep + vs_tip, groundY - f_diam - vs_h - 10, vs_pos + vs_root, groundY - f_diam - vs_h - 10, `Dikey Stb. Yükseklik: ${params.verticalStab.height} mm`);
+
+            ctx.restore();
+        }
+
+        function drawFrontView(ctx, view, params) {
+            ctx.save();
+            ctx.translate(view.x, view.y);
+            const scale = view.width / params.wing.span;
+            const f_diam = params.fuselage.diameter * scale;
+            const w_span = params.wing.span * scale;
+            const w_dihedral = Math.tan(params.wing.dihedral * Math.PI / 180) * (w_span/2);
+
+            const centerX = view.width / 2;
+            const groundY = view.height - 30;
+
+            // Fuselage
+            ctx.beginPath();
+            ctx.arc(centerX, groundY - f_diam/2, f_diam/2, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            // Wing
+            ctx.beginPath();
+            ctx.moveTo(centerX - f_diam/2, groundY - f_diam/2);
+            ctx.lineTo(centerX - w_span/2, groundY - f_diam/2 - w_dihedral);
+            ctx.lineTo(centerX - w_span/2, groundY - f_diam/2 - w_dihedral + 5); // Assuming some thickness
+            ctx.lineTo(centerX - f_diam/2, groundY - f_diam/2 + 5);
+            ctx.closePath();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(centerX + f_diam/2, groundY - f_diam/2);
+            ctx.lineTo(centerX + w_span/2, groundY - f_diam/2 - w_dihedral);
+            ctx.lineTo(centerX + w_span/2, groundY - f_diam/2 - w_dihedral + 5);
+            ctx.lineTo(centerX + f_diam/2, groundY - f_diam/2 + 5);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Dimensions
+            drawDimension(ctx, centerX - w_span/2, groundY, centerX + w_span/2, groundY, `Kanat Açıklığı: ${params.wing.span} mm`);
+
+            ctx.restore();
+        }
+
+        function createSection(title, params) {
+            let fields = '';
+            for (const [key, value] of Object.entries(params)) {
+                fields += `
+                    <div class="form-group">
+                        <label>${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} (mm)</label>
+                        <input type="number" id="${key}" value="${value}" step="1">
+                    </div>
+                `;
+            }
+            return `
+                <div class="input-section">
+                    <h4>${title}</h4>
+                    <div class="input-grid">${fields}</div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
