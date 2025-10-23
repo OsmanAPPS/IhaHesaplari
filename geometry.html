@@ -5,6 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Geometri Görselleştirici - İHA Tasarım Aracı</title>
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.150.1/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.150.1/examples/jsm/"
+        }
+    }
+    </script>
     <style>
         :root {
             --primary-color: #0d6efd;
@@ -51,53 +60,150 @@
             </div>
             <div class="drawing-panel">
                 <h3>3 Görünümlü Teknik Resim</h3>
-                <canvas id="threeViewCanvas" width="800" height="1500"></canvas>
+                <canvas id="threeViewCanvas" width="800" height="1200"></canvas>
+
+                <h3 style="margin-top: 30px;">3D Model</h3>
+                <canvas id="threeDCanvas" width="800" height="600" style="border: 1px solid #dee2e6; background: #fff;"></canvas>
             </div>
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- 3D SETUP ---
+        let scene, camera, renderer, controls, aircraftGroup;
+
+        function init3D() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf0f0f0);
+            camera = new THREE.PerspectiveCamera(50, 800 / 600, 0.1, 5000);
+            camera.position.set(1200, 600, 1800);
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('threeDCanvas'), antialias: true });
+            renderer.setSize(800, 600);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+            directionalLight.position.set(100, 200, 300);
+            scene.add(directionalLight);
+            controls = new OrbitControls(camera, renderer.domElement);
+            aircraftGroup = new THREE.Group();
+            scene.add(aircraftGroup);
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function updateAircraftModel(params) {
+            if (!aircraftGroup) return;
+            while(aircraftGroup.children.length > 0){ aircraftGroup.remove(aircraftGroup.children[0]); }
+
+            const material = new THREE.MeshStandardMaterial({ color: 0x95a5a6, side: THREE.DoubleSide });
+
+            // Fuselage
+            const fuselageGeom = new THREE.CylinderGeometry(params.fuselage.diameter / 2, params.fuselage.tailDiameter / 2, params.fuselage.length, 32);
+            const fuselageMesh = new THREE.Mesh(fuselageGeom, material);
+            fuselageMesh.rotation.z = Math.PI / 2;
+            fuselageMesh.position.x = params.fuselage.length / 2;
+            aircraftGroup.add(fuselageMesh);
+
+            // --- Wings ---
+            const wingShape = createWingShape(params.wing.rootChord, params.wing.tipChord, params.wing.span / 2, params.wing.sweep);
+            const wingExtrudeSettings = { depth: params.wing.thickness / 100 * params.wing.rootChord, bevelEnabled: false };
+
+            const rightWingGeom = new THREE.ExtrudeGeometry(wingShape, wingExtrudeSettings);
+            const rightWing = new THREE.Mesh(rightWingGeom, material);
+            rightWing.rotation.x = -Math.PI / 2;
+            rightWing.position.set(params.wing.position, params.fuselage.diameter / 2, 0);
+            rightWing.rotation.y = -(params.wing.dihedral * Math.PI / 180);
+            aircraftGroup.add(rightWing);
+
+            const leftWingGeom = new THREE.ExtrudeGeometry(wingShape, wingExtrudeSettings);
+            const leftWing = new THREE.Mesh(leftWingGeom, material);
+            leftWing.rotation.x = -Math.PI / 2;
+            leftWing.scale.y = -1;
+            leftWing.position.set(params.wing.position, -params.fuselage.diameter / 2, 0);
+            leftWing.rotation.y = (params.wing.dihedral * Math.PI / 180);
+            aircraftGroup.add(leftWing);
+
+            // --- Horizontal Stabilizer ---
+            const hsShape = createWingShape(params.horizontalStab.rootChord, params.horizontalStab.tipChord, params.horizontalStab.span / 2, params.horizontalStab.sweep);
+            const hsExtrudeSettings = { depth: params.horizontalStab.thickness / 100 * params.horizontalStab.rootChord, bevelEnabled: false };
+
+            const rightHs = new THREE.Mesh(new THREE.ExtrudeGeometry(hsShape, hsExtrudeSettings), material);
+            rightHs.rotation.x = -Math.PI/2;
+            rightHs.position.set(params.horizontalStab.position, params.fuselage.tailDiameter / 2, 0);
+            aircraftGroup.add(rightHs);
+
+            const leftHs = new THREE.Mesh(new THREE.ExtrudeGeometry(hsShape, hsExtrudeSettings), material);
+            leftHs.rotation.x = -Math.PI/2;
+            leftHs.scale.y = -1;
+            leftHs.position.set(params.horizontalStab.position, -params.fuselage.tailDiameter / 2, 0);
+            aircraftGroup.add(leftHs);
+
+            // --- Vertical Stabilizer ---
+            const vsShape = new THREE.Shape();
+            const vsSweepOffset = Math.tan(params.verticalStab.sweep * Math.PI / 180) * params.verticalStab.height;
+            vsShape.moveTo(0, 0);
+            vsShape.lineTo(vsSweepOffset, params.verticalStab.height);
+            vsShape.lineTo(vsSweepOffset + params.verticalStab.tipChord, params.verticalStab.height);
+            vsShape.lineTo(params.verticalStab.rootChord, 0);
+            vsShape.closePath();
+
+            const vsExtrudeSettings = { depth: params.verticalStab.thickness / 100 * params.verticalStab.rootChord, bevelEnabled: false };
+            const vsGeom = new THREE.ExtrudeGeometry(vsShape, vsExtrudeSettings);
+            const verticalStab = new THREE.Mesh(vsGeom, material);
+            verticalStab.position.set(params.verticalStab.position, 0, params.fuselage.tailDiameter / 2);
+            verticalStab.rotation.y = Math.PI / 2;
+            verticalStab.position.z -= (params.verticalStab.thickness / 100 * params.verticalStab.rootChord)/2;
+            aircraftGroup.add(verticalStab);
+        }
+
+        function createWingShape(rootChord, tipChord, semiSpan, sweep) {
+            const shape = new THREE.Shape();
+            const sweepOffset = Math.tan(sweep * Math.PI / 180) * semiSpan;
+            shape.moveTo(0, 0);
+            shape.lineTo(sweepOffset, semiSpan);
+            shape.lineTo(sweepOffset + tipChord, semiSpan);
+            shape.lineTo(rootChord, 0);
+            shape.closePath();
+            return shape;
+        }
+
+        // --- 2D and 3D MAIN SCRIPT ---
         document.addEventListener('DOMContentLoaded', () => {
+            init3D(); // Initialize 3D scene
+
             const params = {
-                fuselage: {
-                    length: 1200, noseLength: 250, tailLength: 450,
-                    diameter: 150, tailDiameter: 50
-                },
-                wing: {
-                    span: 1800, rootChord: 250, tipChord: 180,
-                    sweep: 10, dihedral: 5, thickness: 12, // in percent
-                    position: 500 // from nose
-                },
-                horizontalStab: {
-                    span: 600, rootChord: 150, tipChord: 100,
-                    sweep: 15, thickness: 9,
-                    position: 1050 // from nose
-                },
-                verticalStab: {
-                    height: 300, rootChord: 200, tipChord: 120,
-                    sweep: 25, thickness: 9,
-                    position: 1000 // from nose
-                }
+                fuselage: { length: 1200, noseLength: 250, tailLength: 450, diameter: 150, tailDiameter: 50 },
+                wing: { span: 1800, rootChord: 250, tipChord: 180, sweep: 10, dihedral: 5, thickness: 12, position: 500 },
+                horizontalStab: { span: 600, rootChord: 150, tipChord: 100, sweep: 15, thickness: 9, position: 1050 },
+                verticalStab: { height: 300, rootChord: 200, tipChord: 120, sweep: 25, thickness: 9, position: 1000 }
             };
 
             const panel = document.getElementById('input-panel');
-            const sections = {
-                'Gövde': 'fuselage',
-                'Ana Kanat': 'wing',
-                'Yatay Stabilizatör': 'horizontalStab',
-                'Dikey Stabilizatör': 'verticalStab'
-            };
+            const sections = { 'Gövde': 'fuselage', 'Ana Kanat': 'wing', 'Yatay Stabilizatör': 'horizontalStab', 'Dikey Stabilizatör': 'verticalStab' };
 
             for (const [title, key] of Object.entries(sections)) {
                 panel.innerHTML += createSection(title, params[key], key);
             }
 
-            // Add event listeners to all inputs to trigger redraw
+            function updateAllVisuals() {
+                const currentParams = getParams();
+                drawAircraft(currentParams); // Update 2D
+                updateAircraftModel(currentParams); // Update 3D
+            }
+
             panel.querySelectorAll('input').forEach(input => {
-                input.addEventListener('input', drawAircraft);
+                input.addEventListener('input', updateAllVisuals);
             });
 
-            drawAircraft(); // Initial draw
+            updateAllVisuals(); // Initial draw
         });
 
         function getParams() {
@@ -126,9 +232,9 @@
             ctx.font = '12px Arial';
             ctx.textAlign = 'center';
 
-            const topView = { x: 50, y: 50, width: 700, height: 450 };
-            const sideView = { x: 50, y: 550, width: 700, height: 450 };
-            const frontView = { x: 50, y: 1050, width: 700, height: 400 };
+            const topView = { x: 50, y: 50, width: 700, height: 350 };
+            const sideView = { x: 50, y: 450, width: 700, height: 350 };
+            const frontView = { x: 50, y: 850, width: 700, height: 300 };
 
             ctx.textAlign = 'left';
             ctx.fillStyle = '#34495e';
