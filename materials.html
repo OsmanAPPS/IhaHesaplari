@@ -1,0 +1,246 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Malzeme Veritabanı - İHA Tasarım Aracı</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --light-gray: #f8f9fa;
+            --gray-border: #dee2e6;
+            --text-dark: #212529;
+            --text-light: #6c757d;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; margin: 0; background-color: var(--light-gray); }
+        .sidebar { width: 250px; background: #ffffff; border-right: 1px solid var(--gray-border); padding: 20px; height: 100vh; position: fixed; overflow-y: auto; }
+        .main-content { margin-left: 270px; flex-grow: 1; padding: 20px; }
+        .container { display: flex; gap: 30px; }
+        .properties-panel { flex: 1; }
+        .diagram-panel { flex: 2; }
+        .section { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        .section h3 { margin-top: 0; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid var(--gray-border); padding: 12px; text-align: left; }
+        th { background-color: var(--light-gray); width: 50%; }
+        select { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--gray-border); }
+        canvas { border: 1px solid var(--gray-border); background: #fff; }
+        .sidebar-nav a { display: block; padding: 10px; color: var(--text-dark); text-decoration: none; border-radius: 5px; margin-bottom: 5px; }
+        .sidebar-nav a:hover, .sidebar-nav a.active { background-color: var(--primary-color); color: #fff; }
+        h1 { color: var(--text-dark); }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h3>Navigasyon</h3>
+        <nav class="sidebar-nav">
+            <a href="index.html">Hesaplayıcı</a>
+            <a href="geometry.html">Geometri Görselleştirici</a>
+            <a href="analysis.html">Analiz Paneli</a>
+            <a href="materials.html" class="active">Malzemeler</a>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <h1>Malzeme Veritabanı ve Analizi</h1>
+        <p>Tasarımınız için kullanmak istediğiniz malzemenin mekanik özelliklerini ve davranışını inceleyin.</p>
+
+        <div class="container">
+            <div class="properties-panel">
+                <div class="section">
+                    <h3>Malzeme Seçimi</h3>
+                    <select id="material-select">
+                        <!-- Malzemeler buraya JS ile yüklenecek -->
+                    </select>
+                </div>
+                <div class="section">
+                    <h3>Mekanik Özellikler</h3>
+                    <table id="properties-table">
+                        <tbody>
+                            <!-- Özellikler buraya JS ile yüklenecek -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="diagram-panel section">
+                <h3>Gerilme-Gerinim Diyagramı</h3>
+                <canvas id="stressStrainChart" width="800" height="600"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const materialsDB = {
+            'al6061': {
+                name: 'Alüminyum 6061-T6',
+                properties: {
+                    'Yoğunluk (g/cm³)': 2.7,
+                    'Elastisite Modülü (GPa)': 68.9,
+                    'Poisson Oranı': 0.33,
+                    'Akma Dayanımı (MPa)': 276,
+                    'Çekme Dayanımı (MPa)': 310,
+                    'Kopma Uzaması (%)': 17
+                }
+            },
+            'carbon_fiber': {
+                name: 'Karbon Fiber (Standart Modül)',
+                properties: {
+                    'Yoğunluk (g/cm³)': 1.8,
+                    'Elastisite Modülü (GPa)': 230,
+                    'Poisson Oranı': 0.28,
+                    'Akma Dayanımı (MPa)': 'Yok (Gevrek)',
+                    'Çekme Dayanımı (MPa)': 4000,
+                    'Kopma Uzaması (%)': 1.5
+                }
+            },
+            'balsa': {
+                name: 'Balsa Ağacı',
+                properties: {
+                    'Yoğunluk (g/cm³)': 0.16,
+                    'Elastisite Modülü (GPa)': 3.8,
+                    'Poisson Oranı': 0.23,
+                    'Akma Dayanımı (MPa)': 'Yok (Gevrek)',
+                    'Çekme Dayanımı (MPa)': 15,
+                    'Kopma Uzaması (%)': 1.2
+                }
+            },
+            'pla': {
+                name: 'PLA (3D Baskı Malzemesi)',
+                properties: {
+                    'Yoğunluk (g/cm³)': 1.24,
+                    'Elastisite Modülü (GPa)': 3.5,
+                    'Poisson Oranı': 0.36,
+                    'Akma Dayanımı (MPa)': 50,
+                    'Çekme Dayanımı (MPa)': 55,
+                    'Kopma Uzaması (%)': 6
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const select = document.getElementById('material-select');
+            const tableBody = document.querySelector('#properties-table tbody');
+
+            // Populate select menu
+            for (const key in materialsDB) {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = materialsDB[key].name;
+                select.appendChild(option);
+            }
+
+            // Function to update the view
+            function updateMaterialInfo() {
+                const selectedKey = select.value;
+                const material = materialsDB[selectedKey];
+
+                // Update properties table
+                tableBody.innerHTML = '';
+                for (const [prop, value] of Object.entries(material.properties)) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<th>${prop}</th><td>${value}</td>`;
+                    tableBody.appendChild(row);
+                }
+            }
+
+            // Initial load and event listener
+            select.addEventListener('change', updateMaterialInfo);
+            updateMaterialInfo(); // Load data for the default selected material
+        });
+
+        let stressStrainChart = null;
+
+        function drawStressStrainDiagram(material) {
+            const ctx = document.getElementById('stressStrainChart').getContext('2d');
+
+            const props = material.properties;
+            const youngsModulus = props['Elastisite Modülü (GPa)'] * 1000; // to MPa
+            const yieldStrength = parseFloat(props['Akma Dayanımı (MPa)']);
+            const ultimateStrength = props['Çekme Dayanımı (MPa)'];
+            const elongation = props['Kopma Uzaması (%)'] / 100;
+
+            const labels = [];
+            const data = [];
+
+            // Simplified curve generation
+            const yieldStrain = yieldStrength / youngsModulus;
+            const ultimateStrain = elongation;
+
+            // Elastic region
+            labels.push(0);
+            data.push(0);
+            labels.push(yieldStrain.toFixed(4));
+            data.push(yieldStrength);
+
+            // Plastic region (if ductile)
+            if (!isNaN(yieldStrength)) {
+                 labels.push(ultimateStrain.toFixed(4));
+                 data.push(ultimateStrength);
+            } else { // Brittle material
+                const ultimateStrainBrittle = ultimateStrength / youngsModulus;
+                labels.push(ultimateStrainBrittle.toFixed(5));
+                data.push(ultimateStrength);
+            }
+
+            // Resilience (area under elastic part)
+            const resilience = 0.5 * yieldStrength * yieldStrain;
+            // Toughness (approximate area under the whole curve)
+            const toughness = isNaN(yieldStrength) ? 0.5 * ultimateStrength * (ultimateStrength / youngsModulus) :
+                resilience + (yieldStrength + ultimateStrength) / 2 * (ultimateStrain - yieldStrain);
+
+            if (stressStrainChart) {
+                stressStrainChart.destroy();
+            }
+
+            stressStrainChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Gerilme (MPa)',
+                        data: data,
+                        borderColor: '#0d6efd',
+                        tension: 0.1,
+                        fill: true,
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: `${material.name} - Gerilme-Gerinim Diyagramı` },
+                        subtitle: {
+                            display: true,
+                            text: `Tokluk: ~${toughness.toFixed(2)} MJ/m³ | Rezilyans: ~${resilience.toFixed(2)} MJ/m³ | Süneklik: ${elongation * 100}%`,
+                            padding: { bottom: 10 }
+                        }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'Gerinim (Birim Değiştirme - m/m)' } },
+                        y: { title: { display: true, text: 'Gerilme (MPa)' }, beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function updateMaterialInfo() {
+            const selectedKey = document.getElementById('material-select').value;
+            const material = materialsDB[selectedKey];
+
+            const tableBody = document.querySelector('#properties-table tbody');
+            tableBody.innerHTML = '';
+            for (const [prop, value] of Object.entries(material.properties)) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<th>${prop}</th><td>${value}</td>`;
+                tableBody.appendChild(row);
+            }
+
+            drawStressStrainDiagram(material);
+        }
+    </script>
+</body>
+</html>
