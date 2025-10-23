@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analiz Paneli - İHA Tasarım Aracı</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --primary-color: #0d6efd;
@@ -103,6 +104,69 @@
             <div class="result-grid">
                 <div class="result-box" id="np-result">Nötr Nokta (NP): <strong>0 mm</strong></div>
                 <div class="result-box" id="sm-result" style="border-left-color: #ffc107;">Statik Marj: <strong>0 %</strong> (Sınırda)</div>
+            </div>
+        </div>
+
+        <!-- Performans Analizi Bölümü -->
+        <div class="analysis-section" id="performance-section">
+            <h3>Performans Analizi (İtki/Güç vs. Hız)</h3>
+            <div class="input-grid">
+                <div class="form-group">
+                    <label>Hava Yoğunluğu (kg/m³)</label>
+                    <input type="number" id="perf_rho" value="1.225" step="0.001">
+                </div>
+                <div class="form-group">
+                    <label>CD0 (Sıfır Kaldırma Sürüklenme K.)</label>
+                    <input type="number" id="perf_cd0" value="0.025" step="0.001">
+                </div>
+                <div class="form-group">
+                    <label>Oswald Verimlilik Faktörü (e)</label>
+                    <input type="number" id="perf_e" value="0.8" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Kanat Açıklık Oranı (AR)</label>
+                    <input type="number" id="perf_ar" value="8" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label>Statik İtki (N, @ V=0)</label>
+                    <input type="number" id="perf_static_thrust" value="15">
+                </div>
+                <div class="form-group">
+                    <label>Maksimum Hız (Grafik için - m/s)</label>
+                    <input type="number" id="perf_max_v" value="50">
+                </div>
+            </div>
+            <button id="calculate-perf-btn" style="margin-top: 15px;">Performans Analizini Çalıştır</button>
+            <div class="result-grid">
+                <div>
+                    <canvas id="thrustChart"></canvas>
+                </div>
+                <div>
+                    <canvas id="powerChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menzil ve Havada Kalma Süresi Bölümü -->
+        <div class="analysis-section" id="endurance-section">
+            <h3>Menzil ve Havada Kalma Süresi Tahmini</h3>
+             <div class="input-grid">
+                <div class="form-group">
+                    <label>Batarya Kapasitesi (mAh)</label>
+                    <input type="number" id="endurance_battery_cap" value="5000">
+                </div>
+                <div class="form-group">
+                    <label>Batarya Voltajı (V)</label>
+                    <input type="number" id="endurance_battery_volt" value="14.8">
+                </div>
+                <div class="form-group">
+                    <label>Motor & ESC Verimliliği (%)</label>
+                    <input type="number" id="endurance_efficiency" value="75">
+                </div>
+            </div>
+            <div class="result-grid">
+                <div class="result-box" id="endurance-result">Maksimum Süre: <strong>0 dk</strong></div>
+                <div class="result-box" id="range-result">Maksimum Menzil: <strong>0 km</strong></div>
             </div>
         </div>
 
@@ -226,6 +290,125 @@
                 calculateStability(cg);
             });
         });
+
+        // --- Performance Calculation ---
+        let thrustChart, powerChart;
+        document.getElementById('calculate-perf-btn').addEventListener('click', runPerformanceAnalysis);
+
+        function runPerformanceAnalysis() {
+            const rho = parseFloat(document.getElementById('perf_rho').value);
+            const cd0 = parseFloat(document.getElementById('perf_cd0').value);
+            const e = parseFloat(document.getElementById('perf_e').value);
+            const ar = parseFloat(document.getElementById('perf_ar').value);
+            const staticThrust = parseFloat(document.getElementById('perf_static_thrust').value);
+            const maxV = parseFloat(document.getElementById('perf_max_v').value);
+            const totalWeightText = document.getElementById('total-weight-result').textContent;
+            const totalWeight = (parseFloat(totalWeightText.split(':')[1]) || 0) * 9.81 / 1000; // Convert grams to Newtons
+            const wingArea = parseFloat(document.getElementById('stab_wing_area').value) / 1e6; // Convert mm^2 to m^2
+
+            if (totalWeight <= 0 || wingArea <= 0) {
+                alert("Lütfen Ağırlık & Denge bölümünde geçerli bir ağırlık ve Stabilite bölümünde kanat alanı girin.");
+                return;
+            }
+
+            const k = 1 / (Math.PI * e * ar);
+            const velocities = [];
+            const thrustRequired = [];
+            const thrustAvailable = [];
+            const powerRequired = [];
+            const powerAvailable = [];
+
+            for (let v = 1; v <= maxV; v += 1) {
+                velocities.push(v);
+
+                // Thrust Required = Drag
+                const cl = (2 * totalWeight) / (rho * v**2 * wingArea);
+                const cd = cd0 + k * cl**2;
+                const tr = 0.5 * rho * v**2 * wingArea * cd;
+                thrustRequired.push(tr);
+
+                // Simplified Thrust Available model for prop aircraft
+                const ta = staticThrust * (1 - (v / (maxV * 1.2))); // Assumes max speed is ~20% higher than analysis range
+                thrustAvailable.push(ta > 0 ? ta : 0);
+
+                powerRequired.push(tr * v);
+                powerAvailable.push(ta * v);
+            }
+
+            // --- Draw Charts ---
+            drawPerformanceChart('thrustChart', 'İtki vs. Hız', velocities, thrustRequired, thrustAvailable, 'İtki (N)');
+            drawPerformanceChart('powerChart', 'Güç vs. Hız', velocities, powerRequired, powerAvailable, 'Güç (W)');
+
+            // --- Calculate Endurance and Range ---
+            calculateEnduranceAndRange(powerRequired, velocities);
+        }
+
+        function calculateEnduranceAndRange(powerRequired, velocities) {
+            const batteryCap_mAh = parseFloat(document.getElementById('endurance_battery_cap').value);
+            const batteryVolt = parseFloat(document.getElementById('endurance_battery_volt').value);
+            const motorEscEfficiency = parseFloat(document.getElementById('endurance_efficiency').value) / 100;
+
+            if (powerRequired.length === 0) return;
+
+            // Find minimum power required for max endurance
+            const minPowerRequired = Math.min(...powerRequired);
+            const minPowerIndex = powerRequired.indexOf(minPowerRequired);
+            const velocityForMaxEndurance = velocities[minPowerIndex];
+
+            const batteryEnergy_Wh = (batteryCap_mAh / 1000) * batteryVolt;
+            const batteryEnergy_Ws = batteryEnergy_Wh * 3600; // Watt-seconds
+
+            // Endurance calculation
+            const powerDraw_endurance = minPowerRequired / motorEscEfficiency;
+            const maxEndurance_s = batteryEnergy_Ws / powerDraw_endurance;
+            const maxEndurance_min = maxEndurance_s / 60;
+
+            // For simplified range, assume flying at max endurance speed
+            const maxRange_m = velocityForMaxEndurance * maxEndurance_s;
+            const maxRange_km = maxRange_m / 1000;
+
+            document.getElementById('endurance-result').innerHTML = `Maksimum Süre: <strong>${maxEndurance_min.toFixed(1)} dk</strong> (@ ${velocityForMaxEndurance.toFixed(1)} m/s)`;
+            document.getElementById('range-result').innerHTML = `Maksimum Menzil: <strong>${maxRange_km.toFixed(1)} km</strong>`;
+        }
+
+        function drawPerformanceChart(canvasId, title, labels, requiredData, availableData, yAxisLabel) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            let chartInstance = Chart.getChart(canvasId);
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: `Gerekli ${yAxisLabel.split(' ')[0]}`,
+                            data: requiredData,
+                            borderColor: '#dc3545',
+                            fill: false,
+                            tension: 0.1
+                        },
+                        {
+                            label: `Mevcut ${yAxisLabel.split(' ')[0]}`,
+                            data: availableData,
+                            borderColor: '#0d6efd',
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { title: { display: true, text: title } },
+                    scales: {
+                        x: { title: { display: true, text: 'Hız (m/s)' } },
+                        y: { title: { display: true, text: yAxisLabel } }
+                    }
+                }
+            });
+        }
 
     </script>
 </body>
