@@ -1,0 +1,341 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İHA Tasarım Hesaplayıcı (HTML/JS)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; margin: 0; background-color: #f8f9fa; }
+        .sidebar { width: 280px; background: #ffffff; border-right: 1px solid #dee2e6; padding: 20px; height: 100vh; position: fixed; }
+        .main-content { margin-left: 320px; flex-grow: 1; padding: 20px; }
+        .form-section { display: none; margin-top: 20px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .form-section.active { display: block; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+        .form-group { display: flex; flex-direction: column; }
+        label { margin-bottom: 5px; font-weight: 500; color: #495057; }
+        input { padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 1rem; }
+        button { padding: 12px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 20px; font-size: 1rem; width: 100%; }
+        button:hover { background-color: #0056b3; }
+        h1, h2, h3 { color: #343a40; }
+        #results { margin-top: 25px; padding: 15px; background: #e9f7ef; border-left: 5px solid #28a745; display: none; font-size: 1.1rem; }
+        #plot-container { margin-top: 25px; display: none; }
+        select { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 1rem; }
+        h3 { border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>Hesaplamalar</h2>
+        <select id="calculation_choice" onchange="showForm()">
+            <option value="">Seçim Yapın...</option>
+            <optgroup label="Genel Formüller">
+                <option value="lift">Kaldırma Kuvveti</option>
+                <option value="drag">Sürükleme Kuvveti</option>
+                <option value="thrust">Gerekli İtki</option>
+                <option value="power">Gerekli Güç</option>
+                <option value="stall_speed">Perdövites Hızı</option>
+                <option value="wing_loading">Kanat Yüklemesi</option>
+                <option value="aspect_ratio">Kanat Açıklık Oranı</option>
+                <option value="reynolds">Reynolds Sayısı</option>
+            </optgroup>
+            <optgroup label="Grafikler">
+                <option value="lift_plot">Kaldırma Kuvveti vs. Hız</option>
+                <option value="drag_plot">Sürükleme Kuvveti vs. Hız</option>
+            </optgroup>
+        </select>
+    </div>
+
+    <div class="main-content">
+        <h1>Sabit Kanat İHA Tasarım Hesaplayıcı</h1>
+        <p>Lütfen sol menüden bir hesaplama veya grafik seçin.</p>
+
+        <div id="results"></div>
+        <div id="plot-container">
+            <canvas id="myChart"></canvas>
+        </div>
+
+        <!-- Formlar -->
+        <div id="lift_form" class="form-section">
+            <form onsubmit="event.preventDefault(); calculate('lift');">
+                <h3>Kaldırma Kuvveti</h3>
+                <div class="form-grid">
+                    <div class="form-group"><label>Hava Yoğunluğu (kg/m³)</label><input type="number" id="lift_rho" value="1.225" step="any" required></div>
+                    <div class="form-group"><label>Hız (m/s)</label><input type="number" id="lift_velocity" value="20" step="any" required></div>
+                    <div class="form-group"><label>Kanat Alanı (m²)</label><input type="number" id="lift_wing_area" value="0.5" step="any" required></div>
+                    <div class="form-group"><label>Kaldırma Katsayısı (CL)</label><input type="number" id="lift_cl" value="0.8" step="any" required></div>
+                </div>
+                <button type="submit">Hesapla</button>
+            </form>
+        </div>
+
+        <div id="drag_form" class="form-section">
+            <form onsubmit="event.preventDefault(); calculate('drag');">
+                <h3>Sürükleme Kuvveti</h3>
+                <div class="form-grid">
+                    <div class="form-group"><label>Hava Yoğunluğu (kg/m³)</label><input type="number" id="drag_rho" value="1.225" step="any" required></div>
+                    <div class="form-group"><label>Hız (m/s)</label><input type="number" id="drag_velocity" value="20" step="any" required></div>
+                    <div class="form-group"><label>Kanat Alanı (m²)</label><input type="number" id="drag_wing_area" value="0.5" step="any" required></div>
+                    <div class="form-group"><label>Sürükleme Katsayısı (CD)</label><input type="number" id="drag_cd" value="0.04" step="any" required></div>
+                </div>
+                <button type="submit">Hesapla</button>
+            </form>
+        </div>
+
+        <div id="thrust_form" class="form-section">
+            <form onsubmit="event.preventDefault(); calculate('thrust');">
+                 <h3>Gerekli İtki</h3>
+                <div class="form-grid">
+                    <div class="form-group"><label>Hava Yoğunluğu (kg/m³)</label><input type="number" id="thrust_rho" value="1.225" step="any" required></div>
+                    <div class="form-group"><label>Hız (m/s)</label><input type="number" id="thrust_velocity" value="20" step="any" required></div>
+                    <div class="form-group"><label>Kanat Alanı (m²)</label><input type="number" id="thrust_wing_area" value="0.5" step="any" required></div>
+                    <div class="form-group"><label>Sürükleme Katsayısı (CD)</label><input type="number" id="thrust_cd" value="0.04" step="any" required></div>
+                </div>
+                <button type="submit">Hesapla</button>
+            </form>
+        </div>
+
+        <div id="power_form" class="form-section">
+            <form onsubmit="event.preventDefault(); calculate('power');">
+                <h3>Gerekli Güç</h3>
+                <div class="form-grid">
+                    <div class="form-group"><label>Hava Yoğunluğu (kg/m³)</label><input type="number" id="power_rho" value="1.225" step="any" required></div>
+                    <div class="form-group"><label>Hız (m/s)</label><input type="number" id="power_velocity" value="20" step="any" required></div>
+                    <div class="form-group"><label>Kanat Alanı (m²)</label><input type="number" id="power_wing_area" value="0.5" step="any" required></div>
+                    <div class="form-group"><label>Sürükleme Katsayısı (CD)</label><input type="number" id="power_cd" value="0.04" step="any" required></div>
+                </div>
+                <button type="submit">Hesapla</button>
+            </form>
+        </div>
+
+        <div id="stall_speed_form" class="form-section">
+            <form onsubmit="event.preventDefault(); calculate('stall_speed');">
+                 <h3>Perdövites Hızı</h3>
+                <div class="form-grid">
+                    <div class="form-group"><label>Uçak Ağırlığı (N)</label><input type="number" id="stall_weight" value="50" step="any" required></div>
+                    <div class="form-group"><label>Hava Yoğunluğu (kg/m³)</label><input type="number" id="stall_rho" value="1.225" step="any" required></div>
+                    <div class="form-group"><label>Kanat Alanı (m²)</label><input type="number" id="stall_wing_area" value="0.5" step="any" required></div>
+                    <div class="form-group"><label>Maks. Kaldırma Katsayısı (CLmax)</label><input type="number" id="stall_cl_max" value="1.2" step="any" required></div>
+                </div>
+                <button type="submit">Hesapla</button>
+            </form>
+        </div>
+
+        <div id="wing_loading_form" class="form-section">
+            <form onsubmit="event.preventDefault(); calculate('wing_loading');">
+                <h3>Kanat Yüklemesi</h3>
+                <div class="form-grid">
+                    <div class="form-group"><label>Uçak Ağırlığı (N)</label><input type="number" id="wl_weight" value="50" step="any" required></div>
+                    <div class="form-group"><label>Kanat Alanı (m²)</label><input type="number" id="wl_wing_area" value="0.5" step="any" required></div>
+                </div>
+                <button type="submit">Hesapla</button>
+            </form>
+        </div>
+
+        <div id="aspect_ratio_form" class="form-section">
+            <form onsubmit="event.preventDefault(); calculate('aspect_ratio');">
+                <h3>Kanat Açıklık Oranı</h3>
+                <div class="form-grid">
+                    <div class="form-group"><label>Kanat Açıklığı (m)</label><input type="number" id="ar_wingspan" value="2" step="any" required></div>
+                    <div class="form-group"><label>Kanat Alanı (m²)</label><input type="number" id="ar_wing_area" value="0.5" step="any" required></div>
+                </div>
+                <button type="submit">Hesapla</button>
+            </form>
+        </div>
+
+        <div id="reynolds_form" class="form-section">
+             <form onsubmit="event.preventDefault(); calculate('reynolds');">
+                <h3>Reynolds Sayısı</h3>
+                <div class="form-grid">
+                    <div class="form-group"><label>Hava Yoğunluğu (kg/m³)</label><input type="number" id="re_rho" value="1.225" step="any" required></div>
+                    <div class="form-group"><label>Hız (m/s)</label><input type="number" id="re_velocity" value="20" step="any" required></div>
+                    <div class="form-group"><label>Ort. Veter Uzunluğu (m)</label><input type="number" id="re_chord_length" value="0.25" step="any" required></div>
+                    <div class="form-group"><label>Dinamik Viskozite (Pa.s)</label><input type="number" id="re_viscosity" value="0.0000181" step="any" required></div>
+                </div>
+                <button type="submit">Hesapla</button>
+            </form>
+        </div>
+
+        <div id="lift_plot_form" class="form-section">
+             <form onsubmit="event.preventDefault(); calculate('lift_plot');">
+                <h3>Kaldırma Kuvveti vs. Hız Grafiği</h3>
+                <div class="form-grid">
+                    <div class="form-group"><label>Hava Yoğunluğu (kg/m³)</label><input type="number" id="lp_rho" value="1.225" step="any" required></div>
+                    <div class="form-group"><label>Kanat Alanı (m²)</label><input type="number" id="lp_wing_area" value="0.5" step="any" required></div>
+                    <div class="form-group"><label>Kaldırma Katsayısı (CL)</label><input type="number" id="lp_cl" value="0.8" step="any" required></div>
+                    <div class="form-group"><label>Minimum Hız (m/s)</label><input type="number" id="lp_min_v" value="5" step="any" required></div>
+                    <div class="form-group"><label>Maksimum Hız (m/s)</label><input type="number" id="lp_max_v" value="50" step="any" required></div>
+                </div>
+                <button type="submit">Grafiği Çiz</button>
+            </form>
+        </div>
+
+        <div id="drag_plot_form" class="form-section">
+             <form onsubmit="event.preventDefault(); calculate('drag_plot');">
+                <h3>Sürükleme Kuvveti vs. Hız Grafiği</h3>
+                <div class="form-grid">
+                    <div class="form-group"><label>Hava Yoğunluğu (kg/m³)</label><input type="number" id="dp_rho" value="1.225" step="any" required></div>
+                    <div class="form-group"><label>Kanat Alanı (m²)</label><input type="number" id="dp_wing_area" value="0.5" step="any" required></div>
+                    <div class="form-group"><label>Sürükleme Katsayısı (CD)</label><input type="number" id="dp_cd" value="0.04" step="any" required></div>
+                    <div class="form-group"><label>Minimum Hız (m/s)</label><input type="number" id="dp_min_v" value="5" step="any" required></div>
+                    <div class="form-group"><label>Maksimum Hız (m/s)</label><input type="number" id="dp_max_v" value="50" step="any" required></div>
+                </div>
+                <button type="submit">Grafiği Çiz</button>
+            </form>
+        </div>
+
+    </div>
+
+    <script>
+        // --- FORMULA IMPLEMENTATIONS ---
+        const calculateLift = (rho, v, a, cl) => 0.5 * rho * v**2 * a * cl;
+        const calculateDrag = (rho, v, a, cd) => 0.5 * rho * v**2 * a * cd;
+        const calculateThrustRequired = (rho, v, a, cd) => calculateDrag(rho, v, a, cd);
+        const calculatePowerRequired = (rho, v, a, cd) => calculateThrustRequired(rho, v, a, cd) * v;
+        const calculateStallSpeed = (w, rho, a, cl_max) => Math.sqrt((2 * w) / (rho * a * cl_max));
+        const calculateWingLoading = (w, a) => w / a;
+        const calculateAspectRatio = (span, a) => span**2 / a;
+        const calculateReynoldsNumber = (rho, v, l, mu) => (rho * v * l) / mu;
+
+        let myChart = null; // Chart instance holder
+
+        // --- UI LOGIC ---
+        function showForm() {
+            document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('plot-container').style.display = 'none';
+            if (myChart) myChart.destroy();
+
+            const choice = document.getElementById('calculation_choice').value;
+            if (choice) {
+                document.getElementById(choice + '_form').classList.add('active');
+            }
+        }
+
+        function getValue(id) {
+            return parseFloat(document.getElementById(id).value);
+        }
+
+        function calculate(type) {
+            let resultText = '';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('plot-container').style.display = 'none';
+            if (myChart) myChart.destroy();
+
+            try {
+                switch (type) {
+                    case 'lift':
+                        const lift = calculateLift(getValue('lift_rho'), getValue('lift_velocity'), getValue('lift_wing_area'), getValue('lift_cl'));
+                        resultText = `Hesaplanan Kaldırma Kuvveti: <strong>${lift.toFixed(2)} N</strong>`;
+                        break;
+                    case 'drag':
+                        const drag = calculateDrag(getValue('drag_rho'), getValue('drag_velocity'), getValue('drag_wing_area'), getValue('drag_cd'));
+                        resultText = `Hesaplanan Sürükleme Kuvveti: <strong>${drag.toFixed(2)} N</strong>`;
+                        break;
+                    case 'thrust':
+                         const thrust = calculateThrustRequired(getValue('thrust_rho'), getValue('thrust_velocity'), getValue('thrust_wing_area'), getValue('thrust_cd'));
+                        resultText = `Hesaplanan Gerekli İtki: <strong>${thrust.toFixed(2)} N</strong>`;
+                        break;
+                    case 'power':
+                        const power = calculatePowerRequired(getValue('power_rho'), getValue('power_velocity'), getValue('power_wing_area'), getValue('power_cd'));
+                        resultText = `Hesaplanan Gerekli Güç: <strong>${power.toFixed(2)} Watt</strong>`;
+                        break;
+                    case 'stall_speed':
+                        const stall = calculateStallSpeed(getValue('stall_weight'), getValue('stall_rho'), getValue('stall_wing_area'), getValue('stall_cl_max'));
+                        resultText = `Hesaplanan Perdövites Hızı: <strong>${stall.toFixed(2)} m/s</strong>`;
+                        break;
+                    case 'wing_loading':
+                        const wl = calculateWingLoading(getValue('wl_weight'), getValue('wl_wing_area'));
+                        resultText = `Hesaplanan Kanat Yüklemesi: <strong>${wl.toFixed(2)} N/m²</strong>`;
+                        break;
+                    case 'aspect_ratio':
+                        const ar = calculateAspectRatio(getValue('ar_wingspan'), getValue('ar_wing_area'));
+                        resultText = `Hesaplanan Kanat Açıklık Oranı: <strong>${ar.toFixed(2)}</strong>`;
+                        break;
+                    case 'reynolds':
+                        const re = calculateReynoldsNumber(getValue('re_rho'), getValue('re_velocity'), getValue('re_chord_length'), getValue('re_viscosity'));
+                        resultText = `Hesaplanan Reynolds Sayısı: <strong>${re.toLocaleString(undefined, {maximumFractionDigits: 0})}</strong>`;
+                        break;
+                    case 'lift_plot':
+                        plotChart('lift');
+                        break;
+                    case 'drag_plot':
+                        plotChart('drag');
+                        break;
+                }
+
+                if (resultText) {
+                    const resultsDiv = document.getElementById('results');
+                    resultsDiv.innerHTML = resultText;
+                    resultsDiv.style.display = 'block';
+                }
+            } catch (e) {
+                alert('Hesaplama sırasında bir hata oluştu. Lütfen girdilerinizi kontrol edin.');
+                console.error(e);
+            }
+        }
+
+        function plotChart(type) {
+            const plotContainer = document.getElementById('plot-container');
+            plotContainer.style.display = 'block';
+            const ctx = document.getElementById('myChart').getContext('2d');
+
+            let labels = [];
+            let data = [];
+            let chartLabel = '';
+            let yAxisLabel = '';
+
+            const min_v = (type === 'lift') ? getValue('lp_min_v') : getValue('dp_min_v');
+            const max_v = (type === 'lift') ? getValue('lp_max_v') : getValue('dp_max_v');
+
+            for (let v = min_v; v <= max_v; v += (max_v - min_v) / 50) {
+                labels.push(v.toFixed(2));
+                if (type === 'lift') {
+                    const rho = getValue('lp_rho');
+                    const area = getValue('lp_wing_area');
+                    const cl = getValue('lp_cl');
+                    data.push(calculateLift(rho, v, area, cl));
+                    chartLabel = 'Kaldırma Kuvveti';
+                    yAxisLabel = 'Kaldırma Kuvveti (N)';
+                } else {
+                    const rho = getValue('dp_rho');
+                    const area = getValue('dp_wing_area');
+                    const cd = getValue('dp_cd');
+                    data.push(calculateDrag(rho, v, area, cd));
+                    chartLabel = 'Sürükleme Kuvveti';
+                    yAxisLabel = 'Sürükleme Kuvveti (N)';
+                }
+            }
+
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: chartLabel,
+                        data: data,
+                        borderColor: 'rgba(0, 123, 255, 1)',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Hız (m/s)' }
+                        },
+                        y: {
+                            title: { display: true, text: yAxisLabel }
+                        }
+                    }
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>
