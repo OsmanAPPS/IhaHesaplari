@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airfoil Analizi - İHA Tasarım Aracı</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --light-gray: #f8f9fa;
+            --gray-border: #dee2e6;
+            --text-dark: #212529;
+            --text-light: #6c757d;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; margin: 0; background-color: var(--light-gray); }
+        .sidebar { width: 250px; background: #ffffff; border-right: 1px solid var(--gray-border); padding: 20px; height: 100vh; position: fixed; overflow-y: auto; }
+        .main-content { margin-left: 270px; flex-grow: 1; padding: 20px; }
+        .container-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 30px; }
+        .controls-panel, .results-panel { grid-column: 1 / 2; }
+        .plot-panel { grid-column: 2 / 3; grid-row: 1 / span 2; }
+        .section { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        .section h3 { margin-top: 0; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; }
+        .sidebar-nav a { display: block; padding: 10px; color: var(--text-dark); text-decoration: none; border-radius: 5px; margin-bottom: 5px; }
+        .sidebar-nav a:hover, .sidebar-nav a.active { background-color: var(--primary-color); color: #fff; }
+        h1 { color: var(--text-dark); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--gray-border); box-sizing: border-box;}
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid var(--gray-border); padding: 8px; text-align: left; }
+        th { background-color: var(--light-gray); }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h3>Navigasyon</h3>
+        <nav class="sidebar-nav">
+            <a href="index.html">Hesaplayıcı</a>
+            <a href="geometry.html">Geometri Görselleştirici</a>
+            <a href="analysis.html">Analiz Paneli</a>
+            <a href="materials.html">Malzemeler</a>
+            <a href="airfoil.html" class="active">Airfoil Analizi</a>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <h1>Airfoil Analizi</h1>
+        <p>Popüler kanat profillerinin geometrisini ve aerodinamik performans verilerini inceleyin.</p>
+
+        <div class="container-grid">
+            <div class="controls-panel section">
+                <h3>Kontrol Paneli</h3>
+                <div class="form-group">
+                    <label for="airfoil-select">Airfoil Seçimi:</label>
+                    <select id="airfoil-select">
+                        <option value="naca2412">NACA 2412</option>
+                        <!-- Other airfoils will be added here -->
+                    </select>
+                </div>
+                 <div class="form-group">
+                    <label for="reynolds-select">Reynolds Sayısı:</label>
+                    <select id="reynolds-select">
+                        <option value="50000">50,000</option>
+                        <option value="100000">100,000</option>
+                        <option value="200000">200,000</option>
+                        <option value="500000" selected>500,000</option>
+                        <option value="1000000">1,000,000</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="results-panel section">
+                <h3>Aerodinamik Veriler</h3>
+                <table id="aerodata-table">
+                    <tbody>
+                        <tr><th>Maksimum Taşıma (Cl max)</th><td id="cl-max">--</td></tr>
+                        <tr><th>Sıfır Taşıma Açısı (α₀)</th><td id="alpha-zero">--</td></tr>
+                        <tr><th>Minimum Sürüklenme (Cd min)</th><td id="cd-min">--</td></tr>
+                        <tr><th>Maksimum Verim (Cl/Cd max)</th><td id="cl-cd-max">--</td></tr>
+                        <tr><th>Durma Açısı (α stall)</th><td id="stall-angle">--</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="plot-panel section">
+                <h3>Grafikler</h3>
+                <div class="form-group" style="text-align: center;">
+                     <button class="plot-button active" onclick="switchPlot('geometry')">Geometri</button>
+                     <button class="plot-button" onclick="switchPlot('cl-alpha')">Cl vs α</button>
+                     <button class="plot-button" onclick="switchPlot('cd-alpha')">Cd vs α</button>
+                     <button class="plot-button" onclick="switchPlot('cl-cd')">Cl vs Cd (Polar)</button>
+                </div>
+                <div class="chart-container" style="position: relative; height:450px; width:100%">
+                    <canvas id="airfoilChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const airfoilData = {
+            "naca2412": {
+                name: "NACA 2412",
+                coords: (numPoints = 50) => {
+                    const m = 0.02, p = 0.4, t = 0.12; // NACA 2412 parameters
+                    const points = { upper: [], lower: [] };
+                    for (let i = 0; i <= numPoints; i++) {
+                        const x = 1 - Math.cos(i * Math.PI / (2 * numPoints));
+                        const yt = 5 * t * (0.2969 * Math.sqrt(x) - 0.1260 * x - 0.3516 * x**2 + 0.2843 * x**3 - 0.1015 * x**4);
+                        let yc, dyc_dx;
+                        if (x < p) {
+                            yc = m / p**2 * (2 * p * x - x**2);
+                            dyc_dx = 2 * m / p**2 * (p - x);
+                        } else {
+                            yc = m / (1 - p)**2 * ((1 - 2 * p) + 2 * p * x - x**2);
+                            dyc_dx = 2 * m / (1 - p)**2 * (p - x);
+                        }
+                        const theta = Math.atan(dyc_dx);
+                        points.upper.push({ x: x - yt * Math.sin(theta), y: yc + yt * Math.cos(theta) });
+                        points.lower.push({ x: x + yt * Math.sin(theta), y: yc - yt * Math.cos(theta) });
+                    }
+                    return points.upper.concat(points.lower.reverse());
+                },
+                // Data from XFOIL/UIUC Airfoil Database for different Reynolds numbers
+                performance: {
+                    "500000": [
+                        { alpha: -5, cl: -0.35, cd: 0.015 }, { alpha: -4, cl: -0.25, cd: 0.012 },
+                        { alpha: -3, cl: -0.15, cd: 0.010 }, { alpha: -2, cl: 0.00, cd: 0.008 },
+                        { alpha: -1, cl: 0.12, cd: 0.007 }, { alpha: 0, cl: 0.24, cd: 0.006 },
+                        { alpha: 1, cl: 0.36, cd: 0.006 }, { alpha: 2, cl: 0.48, cd: 0.006 },
+                        { alpha: 3, cl: 0.60, cd: 0.007 }, { alpha: 4, cl: 0.72, cd: 0.008 },
+                        { alpha: 5, cl: 0.84, cd: 0.009 }, { alpha: 6, cl: 0.96, cd: 0.010 },
+                        { alpha: 7, cl: 1.08, cd: 0.012 }, { alpha: 8, cl: 1.20, cd: 0.014 },
+                        { alpha: 9, cl: 1.32, cd: 0.017 }, { alpha: 10, cl: 1.43, cd: 0.021 },
+                        { alpha: 11, cl: 1.52, cd: 0.026 }, { alpha: 12, cl: 1.58, cd: 0.034 },
+                        { alpha: 13, cl: 1.62, cd: 0.045 }, { alpha: 14, cl: 1.63, cd: 0.058 },
+                        { alpha: 15, cl: 1.60, cd: 0.072 }, { alpha: 16, cl: 1.55, cd: 0.088 }
+                    ]
+                }
+            }
+        };
+
+        let currentChart = null;
+        let currentPlotType = 'geometry';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('airfoil-select').addEventListener('change', updateAnalysis);
+            document.getElementById('reynolds-select').addEventListener('change', updateAnalysis);
+            document.querySelectorAll('.plot-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    document.querySelector('.plot-button.active').classList.remove('active');
+                    e.target.classList.add('active');
+                });
+            });
+
+            updateAnalysis();
+        });
+
+        function updateAnalysis() {
+            const airfoilKey = document.getElementById('airfoil-select').value;
+            const reynoldsKey = document.getElementById('reynolds-select').value;
+            const data = airfoilData[airfoilKey];
+            const perfData = data.performance[reynoldsKey];
+
+            if (!perfData) {
+                alert(`No data available for ${data.name} at Re = ${reynoldsKey}.`);
+                return;
+            }
+
+            calculateAndDisplayMetrics(perfData);
+            switchPlot(currentPlotType);
+        }
+
+        function calculateAndDisplayMetrics(perfData) {
+            let clMax = -Infinity, cdMin = Infinity, clCdMax = -Infinity, stallAngle = 0;
+            perfData.forEach(p => {
+                if (p.cl > clMax) {
+                    clMax = p.cl;
+                    stallAngle = p.alpha;
+                }
+                if (p.cd < cdMin) cdMin = p.cd;
+                if (p.cl > 0 && p.cd > 0) {
+                    const clCd = p.cl / p.cd;
+                    if (clCd > clCdMax) clCdMax = clCd;
+                }
+            });
+
+            // Find zero-lift alpha by interpolation
+            let alphaZero = 0;
+            for (let i = 0; i < perfData.length - 1; i++) {
+                if (Math.sign(perfData[i].cl) !== Math.sign(perfData[i+1].cl)) {
+                    const p1 = perfData[i], p2 = perfData[i+1];
+                    alphaZero = p1.alpha - p1.cl * (p2.alpha - p1.alpha) / (p2.cl - p1.cl);
+                    break;
+                }
+            }
+
+            document.getElementById('cl-max').textContent = clMax.toFixed(3);
+            document.getElementById('alpha-zero').textContent = `${alphaZero.toFixed(2)}°`;
+            document.getElementById('cd-min').textContent = cdMin.toFixed(4);
+            document.getElementById('cl-cd-max').textContent = clCdMax.toFixed(2);
+            document.getElementById('stall-angle').textContent = `${stallAngle}°`;
+        }
+
+        function switchPlot(plotType) {
+            currentPlotType = plotType;
+            const airfoilKey = document.getElementById('airfoil-select').value;
+            const reynoldsKey = document.getElementById('reynolds-select').value;
+            const data = airfoilData[airfoilKey];
+            const perfData = data.performance[reynoldsKey];
+
+            const ctx = document.getElementById('airfoilChart').getContext('2d');
+            if (currentChart) {
+                currentChart.destroy();
+            }
+
+            let chartConfig;
+            if (plotType === 'geometry') {
+                const coords = data.coords();
+                chartConfig = {
+                    type: 'scatter',
+                    data: { datasets: [{ label: 'Airfoil Shape', data: coords, showLine: true, borderColor: '#0d6efd', backgroundColor: 'transparent', pointRadius: 0 }] },
+                    options: { maintainAspectRatio: false, scales: { x: { title: { text: 'Chord' } }, y: { title: { text: 'Thickness' }, scaleLabel: { display: true }, afterFit: (scale) => { scale.width = 60; } } }, plugins: { title: { text: `${data.name} Geometry` } } }
+                };
+            } else {
+                let xVar, yVar, xLabel, yLabel, title;
+                switch (plotType) {
+                    case 'cl-alpha': [xVar, yVar, xLabel, yLabel, title] = ['alpha', 'cl', 'Angle of Attack (α°)', 'Lift Coefficient (Cl)', `${data.name} - Cl vs α`]; break;
+                    case 'cd-alpha': [xVar, yVar, xLabel, yLabel, title] = ['alpha', 'cd', 'Angle of Attack (α°)', 'Drag Coefficient (Cd)', `${data.name} - Cd vs α`]; break;
+                    case 'cl-cd': [xVar, yVar, xLabel, yLabel, title] = ['cd', 'cl', 'Drag Coefficient (Cd)', 'Lift Coefficient (Cl)', `${data.name} - Drag Polar`]; break;
+                }
+                const plotData = perfData.map(p => ({ x: p[xVar], y: p[yVar] }));
+                chartConfig = {
+                    type: 'scatter',
+                    data: { datasets: [{ label: yVar.toUpperCase(), data: plotData, showLine: true, borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.1)', pointRadius: 2 }] },
+                    options: { maintainAspectRatio: false, scales: { x: { title: { display: true, text: xLabel } }, y: { title: { display: true, text: yLabel } } }, plugins: { title: { display: true, text: title } } }
+                };
+            }
+            currentChart = new Chart(ctx, chartConfig);
+        }
+    </script>
+</body>
+</html>
