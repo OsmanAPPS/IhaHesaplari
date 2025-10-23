@@ -67,7 +67,9 @@
             </div>
             <div class="diagram-panel section">
                 <h3>Gerilme-Gerinim Diyagramı</h3>
-                <canvas id="stressStrainChart" width="800" height="600"></canvas>
+                <div class="chart-container" style="position: relative; height:500px; width:100%">
+                    <canvas id="stressStrainChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -230,21 +232,6 @@
             });
         }
 
-        function updateMaterialInfo() {
-            const selectedKey = document.getElementById('material-select').value;
-            const material = materialsDB[selectedKey];
-
-            const tableBody = document.querySelector('#properties-table tbody');
-            tableBody.innerHTML = '';
-            for (const [prop, value] of Object.entries(material.properties)) {
-                const row = document.createElement('tr');
-                row.innerHTML = `<th>${prop}</th><td>${value}</td>`;
-                tableBody.appendChild(row);
-            }
-
-            // Ensure draw function is called after updating table
-            drawStressStrainDiagram(material);
-        }
     </script>
 </body>
 </html>
