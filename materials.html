@@ -76,53 +76,56 @@
         const materialsDB = {
             'al6061': {
                 name: 'Alüminyum 6061-T6',
-                properties: {
-                    'Yoğunluk (g/cm³)': 2.7,
-                    'Elastisite Modülü (GPa)': 68.9,
-                    'Poisson Oranı': 0.33,
-                    'Akma Dayanımı (MPa)': 276,
-                    'Çekme Dayanımı (MPa)': 310,
-                    'Kopma Uzaması (%)': 17
-                }
+                properties: { 'Yoğunluk (g/cm³)': 2.7, 'Elastisite Modülü (GPa)': 68.9, 'Poisson Oranı': 0.33, 'Akma Dayanımı (MPa)': 276, 'Çekme Dayanımı (MPa)': 310, 'Kopma Uzaması (%)': 17 }
             },
             'carbon_fiber': {
                 name: 'Karbon Fiber (Standart Modül)',
-                properties: {
-                    'Yoğunluk (g/cm³)': 1.8,
-                    'Elastisite Modülü (GPa)': 230,
-                    'Poisson Oranı': 0.28,
-                    'Akma Dayanımı (MPa)': 'Yok (Gevrek)',
-                    'Çekme Dayanımı (MPa)': 4000,
-                    'Kopma Uzaması (%)': 1.5
-                }
+                properties: { 'Yoğunluk (g/cm³)': 1.8, 'Elastisite Modülü (GPa)': 230, 'Poisson Oranı': 0.28, 'Akma Dayanımı (MPa)': 'Yok (Gevrek)', 'Çekme Dayanımı (MPa)': 4000, 'Kopma Uzaması (%)': 1.5 }
             },
             'balsa': {
                 name: 'Balsa Ağacı',
-                properties: {
-                    'Yoğunluk (g/cm³)': 0.16,
-                    'Elastisite Modülü (GPa)': 3.8,
-                    'Poisson Oranı': 0.23,
-                    'Akma Dayanımı (MPa)': 'Yok (Gevrek)',
-                    'Çekme Dayanımı (MPa)': 15,
-                    'Kopma Uzaması (%)': 1.2
-                }
+                properties: { 'Yoğunluk (g/cm³)': 0.16, 'Elastisite Modülü (GPa)': 3.8, 'Poisson Oranı': 0.23, 'Akma Dayanımı (MPa)': 'Yok (Gevrek)', 'Çekme Dayanımı (MPa)': 15, 'Kopma Uzaması (%)': 1.2 }
+            },
+            'epp': {
+                name: 'EPP Köpük',
+                properties: { 'Yoğunluk (g/cm³)': 0.06, 'Elastisite Modülü (GPa)': 0.02, 'Poisson Oranı': 0.1, 'Akma Dayanımı (MPa)': 0.3, 'Çekme Dayanımı (MPa)': 0.5, 'Kopma Uzaması (%)': 15 }
+            },
+            'plywood': {
+                name: 'Havacılık Kontrplağı',
+                properties: { 'Yoğunluk (g/cm³)': 0.7, 'Elastisite Modülü (GPa)': 7.5, 'Poisson Oranı': 0.07, 'Akma Dayanımı (MPa)': 'Yok (Gevrek)', 'Çekme Dayanımı (MPa)': 40, 'Kopma Uzaması (%)': 0.8 }
+            },
+            'fiberglass': {
+                name: 'Fiberglas (E-Glass)',
+                properties: { 'Yoğunluk (g/cm³)': 2.55, 'Elastisite Modülü (GPa)': 72, 'Poisson Oranı': 0.22, 'Akma Dayanımı (MPa)': 'Yok (Gevrek)', 'Çekme Dayanımı (MPa)': 1500, 'Kopma Uzaması (%)': 2.5 }
             },
             'pla': {
-                name: 'PLA (3D Baskı Malzemesi)',
-                properties: {
-                    'Yoğunluk (g/cm³)': 1.24,
-                    'Elastisite Modülü (GPa)': 3.5,
-                    'Poisson Oranı': 0.36,
-                    'Akma Dayanımı (MPa)': 50,
-                    'Çekme Dayanımı (MPa)': 55,
-                    'Kopma Uzaması (%)': 6
-                }
+                name: 'PLA (3D Baskı)',
+                properties: { 'Yoğunluk (g/cm³)': 1.24, 'Elastisite Modülü (GPa)': 3.5, 'Poisson Oranı': 0.36, 'Akma Dayanımı (MPa)': 50, 'Çekme Dayanımı (MPa)': 55, 'Kopma Uzaması (%)': 6 }
+            },
+            'abs': {
+                name: 'ABS (3D Baskı)',
+                properties: { 'Yoğunluk (g/cm³)': 1.05, 'Elastisite Modülü (GPa)': 2.2, 'Poisson Oranı': 0.35, 'Akma Dayanımı (MPa)': 40, 'Çekme Dayanımı (MPa)': 45, 'Kopma Uzaması (%)': 20 }
+            },
+            'petg': {
+                name: 'PETG (3D Baskı)',
+                properties: { 'Yoğunluk (g/cm³)': 1.27, 'Elastisite Modülü (GPa)': 2.1, 'Poisson Oranı': 0.37, 'Akma Dayanımı (MPa)': 45, 'Çekme Dayanımı (MPa)': 50, 'Kopma Uzaması (%)': 25 }
+            },
+            'tpu': {
+                name: 'TPU (Esnek Filament)',
+                properties: { 'Yoğunluk (g/cm³)': 1.2, 'Elastisite Modülü (GPa)': 0.05, 'Poisson Oranı': 0.49, 'Akma Dayanımı (MPa)': 10, 'Çekme Dayanımı (MPa)': 30, 'Kopma Uzaması (%)': 600 }
+            },
+            'nylon': {
+                name: 'Naylon PA12 (3D Baskı)',
+                properties: { 'Yoğunluk (g/cm³)': 1.01, 'Elastisite Modülü (GPa)': 1.8, 'Poisson Oranı': 0.4, 'Akma Dayanımı (MPa)': 45, 'Çekme Dayanımı (MPa)': 50, 'Kopma Uzaması (%)': 150 }
+            },
+            'pccf': {
+                name: 'PC-CF (Karbon Fiber Polikarbonat)',
+                properties: { 'Yoğunluk (g/cm³)': 1.3, 'Elastisite Modülü (GPa)': 8.0, 'Poisson Oranı': 0.3, 'Akma Dayanımı (MPa)': 'Yok (Gevrek)', 'Çekme Dayanımı (MPa)': 90, 'Kopma Uzaması (%)': 2.5 }
             }
         };
 
         document.addEventListener('DOMContentLoaded', () => {
             const select = document.getElementById('material-select');
-            const tableBody = document.querySelector('#properties-table tbody');
 
             // Populate select menu
             for (const key in materialsDB) {
@@ -132,26 +135,29 @@
                 select.appendChild(option);
             }
 
-            // Function to update the view
-            function updateMaterialInfo() {
-                const selectedKey = select.value;
-                const material = materialsDB[selectedKey];
-
-                // Update properties table
-                tableBody.innerHTML = '';
-                for (const [prop, value] of Object.entries(material.properties)) {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `<th>${prop}</th><td>${value}</td>`;
-                    tableBody.appendChild(row);
-                }
-            }
-
             // Initial load and event listener
             select.addEventListener('change', updateMaterialInfo);
-            updateMaterialInfo(); // Load data for the default selected material
+            updateMaterialInfo(); // Load data and draw chart for the default selected material
         });
 
         let stressStrainChart = null;
+
+        function updateMaterialInfo() {
+            const selectedKey = document.getElementById('material-select').value;
+            const material = materialsDB[selectedKey];
+            const tableBody = document.querySelector('#properties-table tbody');
+
+            // Update properties table
+            tableBody.innerHTML = '';
+            for (const [prop, value] of Object.entries(material.properties)) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<th>${prop}</th><td>${value}</td>`;
+                tableBody.appendChild(row);
+            }
+
+            // Draw the stress-strain diagram
+            drawStressStrainDiagram(material);
+        }
 
         function drawStressStrainDiagram(material) {
             const ctx = document.getElementById('stressStrainChart').getContext('2d');
@@ -166,29 +172,26 @@
             const data = [];
 
             // Simplified curve generation
-            const yieldStrain = yieldStrength / youngsModulus;
+            const yieldStrain = isNaN(yieldStrength) ? (ultimateStrength / youngsModulus) * 0.8 : yieldStrength / youngsModulus;
             const ultimateStrain = elongation;
 
             // Elastic region
             labels.push(0);
             data.push(0);
-            labels.push(yieldStrain.toFixed(4));
-            data.push(yieldStrength);
 
-            // Plastic region (if ductile)
             if (!isNaN(yieldStrength)) {
-                 labels.push(ultimateStrain.toFixed(4));
-                 data.push(ultimateStrength);
-            } else { // Brittle material
-                const ultimateStrainBrittle = ultimateStrength / youngsModulus;
-                labels.push(ultimateStrainBrittle.toFixed(5));
-                data.push(ultimateStrength);
+                labels.push(yieldStrain.toFixed(4));
+                data.push(yieldStrength);
             }
+
+            // Plastic/Ultimate region
+            labels.push(ultimateStrain.toFixed(4));
+            data.push(ultimateStrength);
 
             // Resilience (area under elastic part)
             const resilience = 0.5 * yieldStrength * yieldStrain;
             // Toughness (approximate area under the whole curve)
-            const toughness = isNaN(yieldStrength) ? 0.5 * ultimateStrength * (ultimateStrength / youngsModulus) :
+            const toughness = isNaN(yieldStrength) ? 0.5 * ultimateStrength * ultimateStrain :
                 resilience + (yieldStrength + ultimateStrength) / 2 * (ultimateStrain - yieldStrain);
 
             if (stressStrainChart) {
@@ -198,12 +201,12 @@
             stressStrainChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: labels,
+                    labels: labels.sort(),
                     datasets: [{
                         label: 'Gerilme (MPa)',
                         data: data,
                         borderColor: '#0d6efd',
-                        tension: 0.1,
+                        tension: 0.2,
                         fill: true,
                         backgroundColor: 'rgba(13, 110, 253, 0.1)'
                     }]
@@ -215,7 +218,7 @@
                         title: { display: true, text: `${material.name} - Gerilme-Gerinim Diyagramı` },
                         subtitle: {
                             display: true,
-                            text: `Tokluk: ~${toughness.toFixed(2)} MJ/m³ | Rezilyans: ~${resilience.toFixed(2)} MJ/m³ | Süneklik: ${elongation * 100}%`,
+                            text: `Tokluk: ~${toughness.toFixed(2)} MJ/m³ | Rezilyans: ~${isNaN(resilience) ? 'N/A' : resilience.toFixed(2)} MJ/m³ | Süneklik: ${elongation * 100}%`,
                             padding: { bottom: 10 }
                         }
                     },
@@ -239,6 +242,7 @@
                 tableBody.appendChild(row);
             }
 
+            // Ensure draw function is called after updating table
             drawStressStrainDiagram(material);
         }
     </script>
