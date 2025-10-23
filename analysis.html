@@ -170,6 +170,40 @@
             </div>
         </div>
 
+        <!-- Elektronik Güç Sistemi Analizi Bölümü -->
+        <div class="analysis-section" id="electronics-section">
+            <h3>Elektronik Güç Sistemi Analizi</h3>
+            <div class="input-grid">
+                <div class="form-group">
+                    <label>Motor KV (RPM/V)</label>
+                    <input type="number" id="elec_motor_kv" value="900">
+                </div>
+                <div class="form-group">
+                    <label>Pervane Çapı (inç)</label>
+                    <input type="number" id="elec_prop_diam" value="10">
+                </div>
+                <div class="form-group">
+                    <label>Pervane Adımı (inç)</label>
+                    <input type="number" id="elec_prop_pitch" value="4.5">
+                </div>
+                <div class="form-group">
+                    <label>Batarya Hücre Sayısı (S)</label>
+                    <input type="number" id="elec_battery_s" value="4">
+                </div>
+                 <div class="form-group">
+                    <label>Hedeflenen Uçuş Süresi (dk)</label>
+                    <input type="number" id="elec_target_time" value="15">
+                </div>
+            </div>
+            <div class="result-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                <div class="result-box" id="elec-thrust-result">Tahmini İtki: <strong>0 g</strong></div>
+                <div class="result-box" id="elec-current-result">Maks Akım: <strong>0 A</strong></div>
+                <div class="result-box" id="elec-avg-current-result">Ort. Akım: <strong>0 A</strong></div>
+                <div class="result-box" id="elec-rec-cap-result">Önerilen Kapasite: <strong>0 mAh</strong></div>
+                <div class="result-box" id="elec-c-rate-result">Gerekli C Değeri: <strong>0 C</strong></div>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -291,9 +325,54 @@
             });
         });
 
+        // Add event listeners for endurance inputs
+        document.getElementById('endurance-section').querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', runPerformanceAnalysis); // Re-run analysis to update endurance/range
+        });
+
         // --- Performance Calculation ---
         let thrustChart, powerChart;
         document.getElementById('calculate-perf-btn').addEventListener('click', runPerformanceAnalysis);
+
+        // --- Electronics Calculation ---
+        document.getElementById('electronics-section').querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', calculateElectronics);
+        });
+        document.getElementById('add-component-btn').addEventListener('click', calculateElectronics);
+        document.querySelector('#cg-table tbody').addEventListener('input', calculateElectronics);
+
+
+        function calculateElectronics() {
+            const kv = parseFloat(document.getElementById('elec_motor_kv').value);
+            const propD = parseFloat(document.getElementById('elec_prop_diam').value);
+            const propP = parseFloat(document.getElementById('elec_prop_pitch').value);
+            const cells = parseFloat(document.getElementById('elec_battery_s').value);
+            const targetTime = parseFloat(document.getElementById('elec_target_time').value);
+            const totalWeightText = document.getElementById('total-weight-result').textContent;
+            const totalWeight_g = parseFloat(totalWeightText.split(':')[1]) || 0;
+
+            if (kv <= 0 || propD <= 0 || cells <= 0) return;
+
+            const voltage = cells * 3.7; // Nominal voltage
+            const RPM = kv * voltage * 0.8; // Estimated RPM under load
+
+            // Simplified empirical formulas for estimation
+            const staticThrust_g = Math.pow(propD, 3.5) / Math.pow(propP, 0.5) * RPM * 0.000000028 * propP;
+            const maxCurrent_A = (staticThrust_g / 10) * (kv / 100) / 2; // Very rough estimation
+
+            const thrustToWeight = totalWeight_g > 0 ? staticThrust_g / totalWeight_g : 0;
+            const throttleForHover = totalWeight_g > 0 ? Math.sqrt(totalWeight_g / staticThrust_g) : 0; // Assuming T ~ throttle^2
+            const avgCurrent_A = maxCurrent_A * Math.pow(throttleForHover, 1.5); // Assuming A ~ throttle^1.5
+
+            const recommendedCapacity_mAh = targetTime > 0 ? (avgCurrent_A * 1000 * (targetTime / 60)) / 0.8 : 0; // Using 80% of capacity
+            const requiredC = recommendedCapacity_mAh > 0 ? (maxCurrent_A * 1000) / recommendedCapacity_mAh : 0;
+
+            document.getElementById('elec-thrust-result').innerHTML = `Tahmini İtki: <strong>${staticThrust_g.toFixed(0)} g</strong> (T/W: ${thrustToWeight.toFixed(2)})`;
+            document.getElementById('elec-current-result').innerHTML = `Maks Akım: <strong>${maxCurrent_A.toFixed(1)} A</strong>`;
+            document.getElementById('elec-avg-current-result').innerHTML = `Ort. Akım: <strong>${avgCurrent_A.toFixed(1)} A</strong>`;
+            document.getElementById('elec-rec-cap-result').innerHTML = `Önerilen Kapasite: <strong>${Math.ceil(recommendedCapacity_mAh / 100) * 100} mAh</strong>`;
+            document.getElementById('elec-c-rate-result').innerHTML = `Gerekli C Değeri: <strong>~${Math.ceil(requiredC)} C</strong>`;
+        }
 
         function runPerformanceAnalysis() {
             const rho = parseFloat(document.getElementById('perf_rho').value);
