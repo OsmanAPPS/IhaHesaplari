@@ -4,337 +4,407 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>İHA Tasarım Hesaplayıcı (HTML/JS)</title>
+    <title>Gelişmiş İHA Tasarım Hesaplayıcı</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; margin: 0; background-color: #f8f9fa; }
-        .sidebar { width: 280px; background: #ffffff; border-right: 1px solid #dee2e6; padding: 20px; height: 100vh; position: fixed; }
-        .main-content { margin-left: 320px; flex-grow: 1; padding: 20px; }
-        .form-section { display: none; margin-top: 20px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .form-section.active { display: block; }
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
-        .form-group { display: flex; flex-direction: column; }
-        label { margin-bottom: 5px; font-weight: 500; color: #495057; }
-        input { padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 1rem; }
-        button { padding: 12px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 20px; font-size: 1rem; width: 100%; }
+        :root {
+            --primary-color: #007bff;
+            --light-gray: #f8f9fa;
+            --gray-border: #dee2e6;
+            --text-dark: #343a40;
+            --text-light: #6c757d;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; margin: 0; background-color: var(--light-gray); }
+        .sidebar { width: 280px; background: #ffffff; border-right: 1px solid var(--gray-border); padding: 20px; height: 100vh; position: fixed; overflow-y: auto; }
+        .main-content { margin-left: 300px; flex-grow: 1; padding: 30px; }
+        .formula-card { display: none; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        .formula-card.active { display: block; }
+        .formula-card h3 { color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; margin-top: 0; }
+        .solver-section, .plotter-section { margin-top: 20px; }
+        .solver-section h4, .plotter-section h4 { margin-bottom: 15px; color: var(--text-dark); }
+        .input-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+        .input-group { display: flex; align-items: center; }
+        .input-group input[type="radio"] { margin-right: 10px; }
+        .input-group label { color: var(--text-light); flex-grow: 1; }
+        .input-group input[type="number"] { width: 100%; padding: 8px; border: 1px solid var(--gray-border); border-radius: 4px; }
+        .input-group input[type="number"]:disabled { background: #e9ecef; }
+        .button-container { text-align: right; }
+        button { padding: 10px 25px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
         button:hover { background-color: #0056b3; }
-        h1, h2, h3 { color: #343a40; }
-        #results { margin-top: 25px; padding: 15px; background: #e9f7ef; border-left: 5px solid #28a745; display: none; font-size: 1.1rem; }
-        #plot-container { margin-top: 25px; display: none; }
-        select { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 1rem; }
-        h3 { border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; }
+        .result-box { margin-top: 20px; padding: 15px; background: #e9f7ef; border-left: 5px solid #28a745; font-size: 1.1rem; display: none; }
+        .plot-controls { background-color: #f8f9fa; padding: 15px; border-radius: 4px; margin-top: 10px; }
+        .plot-controls .input-grid { gap: 10px; }
+        .sidebar-nav a { display: block; padding: 10px; color: var(--text-dark); text-decoration: none; border-radius: 5px; margin-bottom: 5px; }
+        .sidebar-nav a:hover, .sidebar-nav a.active { background-color: var(--primary-color); color: #fff; }
+        h1 { color: var(--text-dark); }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
-        <h2>Hesaplamalar</h2>
-        <select id="calculation_choice" onchange="showForm()">
-            <option value="">Seçim Yapın...</option>
-            <optgroup label="Genel Formüller">
-                <option value="lift">Kaldırma Kuvveti</option>
-                <option value="drag">Sürükleme Kuvveti</option>
-                <option value="thrust">Gerekli İtki</option>
-                <option value="power">Gerekli Güç</option>
-                <option value="stall_speed">Perdövites Hızı</option>
-                <option value="wing_loading">Kanat Yüklemesi</option>
-                <option value="aspect_ratio">Kanat Açıklık Oranı</option>
-                <option value="reynolds">Reynolds Sayısı</option>
-            </optgroup>
-            <optgroup label="Grafikler">
-                <option value="lift_plot">Kaldırma Kuvveti vs. Hız</option>
-                <option value="drag_plot">Sürükleme Kuvveti vs. Hız</option>
-            </optgroup>
-        </select>
+        <h3>Formüller</h3>
+        <nav class="sidebar-nav" id="sidebarNav">
+            <!-- Nav links will be dynamically generated by JS -->
+        </nav>
     </div>
 
     <div class="main-content">
-        <h1>Sabit Kanat İHA Tasarım Hesaplayıcı</h1>
-        <p>Lütfen sol menüden bir hesaplama veya grafik seçin.</p>
+        <h1>Gelişmiş İHA Tasarım Hesaplayıcı</h1>
+        <p>Bir formül seçerek başlayın. Herhangi bir değişkeni hesaplayabilir ve sonuçların grafiğini çizebilirsiniz.</p>
 
-        <div id="results"></div>
-        <div id="plot-container">
-            <canvas id="myChart"></canvas>
-        </div>
-
-        <!-- Formlar -->
-        <div id="lift_form" class="form-section">
-            <form onsubmit="event.preventDefault(); calculate('lift');">
-                <h3>Kaldırma Kuvveti</h3>
-                <div class="form-grid">
-                    <div class="form-group"><label>Hava Yoğunluğu (kg/m³)</label><input type="number" id="lift_rho" value="1.225" step="any" required></div>
-                    <div class="form-group"><label>Hız (m/s)</label><input type="number" id="lift_velocity" value="20" step="any" required></div>
-                    <div class="form-group"><label>Kanat Alanı (m²)</label><input type="number" id="lift_wing_area" value="0.5" step="any" required></div>
-                    <div class="form-group"><label>Kaldırma Katsayısı (CL)</label><input type="number" id="lift_cl" value="0.8" step="any" required></div>
-                </div>
-                <button type="submit">Hesapla</button>
-            </form>
-        </div>
-
-        <div id="drag_form" class="form-section">
-            <form onsubmit="event.preventDefault(); calculate('drag');">
-                <h3>Sürükleme Kuvveti</h3>
-                <div class="form-grid">
-                    <div class="form-group"><label>Hava Yoğunluğu (kg/m³)</label><input type="number" id="drag_rho" value="1.225" step="any" required></div>
-                    <div class="form-group"><label>Hız (m/s)</label><input type="number" id="drag_velocity" value="20" step="any" required></div>
-                    <div class="form-group"><label>Kanat Alanı (m²)</label><input type="number" id="drag_wing_area" value="0.5" step="any" required></div>
-                    <div class="form-group"><label>Sürükleme Katsayısı (CD)</label><input type="number" id="drag_cd" value="0.04" step="any" required></div>
-                </div>
-                <button type="submit">Hesapla</button>
-            </form>
-        </div>
-
-        <div id="thrust_form" class="form-section">
-            <form onsubmit="event.preventDefault(); calculate('thrust');">
-                 <h3>Gerekli İtki</h3>
-                <div class="form-grid">
-                    <div class="form-group"><label>Hava Yoğunluğu (kg/m³)</label><input type="number" id="thrust_rho" value="1.225" step="any" required></div>
-                    <div class="form-group"><label>Hız (m/s)</label><input type="number" id="thrust_velocity" value="20" step="any" required></div>
-                    <div class="form-group"><label>Kanat Alanı (m²)</label><input type="number" id="thrust_wing_area" value="0.5" step="any" required></div>
-                    <div class="form-group"><label>Sürükleme Katsayısı (CD)</label><input type="number" id="thrust_cd" value="0.04" step="any" required></div>
-                </div>
-                <button type="submit">Hesapla</button>
-            </form>
-        </div>
-
-        <div id="power_form" class="form-section">
-            <form onsubmit="event.preventDefault(); calculate('power');">
-                <h3>Gerekli Güç</h3>
-                <div class="form-grid">
-                    <div class="form-group"><label>Hava Yoğunluğu (kg/m³)</label><input type="number" id="power_rho" value="1.225" step="any" required></div>
-                    <div class="form-group"><label>Hız (m/s)</label><input type="number" id="power_velocity" value="20" step="any" required></div>
-                    <div class="form-group"><label>Kanat Alanı (m²)</label><input type="number" id="power_wing_area" value="0.5" step="any" required></div>
-                    <div class="form-group"><label>Sürükleme Katsayısı (CD)</label><input type="number" id="power_cd" value="0.04" step="any" required></div>
-                </div>
-                <button type="submit">Hesapla</button>
-            </form>
-        </div>
-
-        <div id="stall_speed_form" class="form-section">
-            <form onsubmit="event.preventDefault(); calculate('stall_speed');">
-                 <h3>Perdövites Hızı</h3>
-                <div class="form-grid">
-                    <div class="form-group"><label>Uçak Ağırlığı (N)</label><input type="number" id="stall_weight" value="50" step="any" required></div>
-                    <div class="form-group"><label>Hava Yoğunluğu (kg/m³)</label><input type="number" id="stall_rho" value="1.225" step="any" required></div>
-                    <div class="form-group"><label>Kanat Alanı (m²)</label><input type="number" id="stall_wing_area" value="0.5" step="any" required></div>
-                    <div class="form-group"><label>Maks. Kaldırma Katsayısı (CLmax)</label><input type="number" id="stall_cl_max" value="1.2" step="any" required></div>
-                </div>
-                <button type="submit">Hesapla</button>
-            </form>
-        </div>
-
-        <div id="wing_loading_form" class="form-section">
-            <form onsubmit="event.preventDefault(); calculate('wing_loading');">
-                <h3>Kanat Yüklemesi</h3>
-                <div class="form-grid">
-                    <div class="form-group"><label>Uçak Ağırlığı (N)</label><input type="number" id="wl_weight" value="50" step="any" required></div>
-                    <div class="form-group"><label>Kanat Alanı (m²)</label><input type="number" id="wl_wing_area" value="0.5" step="any" required></div>
-                </div>
-                <button type="submit">Hesapla</button>
-            </form>
-        </div>
-
-        <div id="aspect_ratio_form" class="form-section">
-            <form onsubmit="event.preventDefault(); calculate('aspect_ratio');">
-                <h3>Kanat Açıklık Oranı</h3>
-                <div class="form-grid">
-                    <div class="form-group"><label>Kanat Açıklığı (m)</label><input type="number" id="ar_wingspan" value="2" step="any" required></div>
-                    <div class="form-group"><label>Kanat Alanı (m²)</label><input type="number" id="ar_wing_area" value="0.5" step="any" required></div>
-                </div>
-                <button type="submit">Hesapla</button>
-            </form>
-        </div>
-
-        <div id="reynolds_form" class="form-section">
-             <form onsubmit="event.preventDefault(); calculate('reynolds');">
-                <h3>Reynolds Sayısı</h3>
-                <div class="form-grid">
-                    <div class="form-group"><label>Hava Yoğunluğu (kg/m³)</label><input type="number" id="re_rho" value="1.225" step="any" required></div>
-                    <div class="form-group"><label>Hız (m/s)</label><input type="number" id="re_velocity" value="20" step="any" required></div>
-                    <div class="form-group"><label>Ort. Veter Uzunluğu (m)</label><input type="number" id="re_chord_length" value="0.25" step="any" required></div>
-                    <div class="form-group"><label>Dinamik Viskozite (Pa.s)</label><input type="number" id="re_viscosity" value="0.0000181" step="any" required></div>
-                </div>
-                <button type="submit">Hesapla</button>
-            </form>
-        </div>
-
-        <div id="lift_plot_form" class="form-section">
-             <form onsubmit="event.preventDefault(); calculate('lift_plot');">
-                <h3>Kaldırma Kuvveti vs. Hız Grafiği</h3>
-                <div class="form-grid">
-                    <div class="form-group"><label>Hava Yoğunluğu (kg/m³)</label><input type="number" id="lp_rho" value="1.225" step="any" required></div>
-                    <div class="form-group"><label>Kanat Alanı (m²)</label><input type="number" id="lp_wing_area" value="0.5" step="any" required></div>
-                    <div class="form-group"><label>Kaldırma Katsayısı (CL)</label><input type="number" id="lp_cl" value="0.8" step="any" required></div>
-                    <div class="form-group"><label>Minimum Hız (m/s)</label><input type="number" id="lp_min_v" value="5" step="any" required></div>
-                    <div class="form-group"><label>Maksimum Hız (m/s)</label><input type="number" id="lp_max_v" value="50" step="any" required></div>
-                </div>
-                <button type="submit">Grafiği Çiz</button>
-            </form>
-        </div>
-
-        <div id="drag_plot_form" class="form-section">
-             <form onsubmit="event.preventDefault(); calculate('drag_plot');">
-                <h3>Sürükleme Kuvveti vs. Hız Grafiği</h3>
-                <div class="form-grid">
-                    <div class="form-group"><label>Hava Yoğunluğu (kg/m³)</label><input type="number" id="dp_rho" value="1.225" step="any" required></div>
-                    <div class="form-group"><label>Kanat Alanı (m²)</label><input type="number" id="dp_wing_area" value="0.5" step="any" required></div>
-                    <div class="form-group"><label>Sürükleme Katsayısı (CD)</label><input type="number" id="dp_cd" value="0.04" step="any" required></div>
-                    <div class="form-group"><label>Minimum Hız (m/s)</label><input type="number" id="dp_min_v" value="5" step="any" required></div>
-                    <div class="form-group"><label>Maksimum Hız (m/s)</label><input type="number" id="dp_max_v" value="50" step="any" required></div>
-                </div>
-                <button type="submit">Grafiği Çiz</button>
-            </form>
-        </div>
-
+        <!-- Formula Cards Will Be Inserted Here by JS -->
+        <div id="formula-cards-container"></div>
     </div>
 
     <script>
-        // --- FORMULA IMPLEMENTATIONS ---
-        const calculateLift = (rho, v, a, cl) => 0.5 * rho * v**2 * a * cl;
-        const calculateDrag = (rho, v, a, cd) => 0.5 * rho * v**2 * a * cd;
-        const calculateThrustRequired = (rho, v, a, cd) => calculateDrag(rho, v, a, cd);
-        const calculatePowerRequired = (rho, v, a, cd) => calculateThrustRequired(rho, v, a, cd) * v;
-        const calculateStallSpeed = (w, rho, a, cl_max) => Math.sqrt((2 * w) / (rho * a * cl_max));
-        const calculateWingLoading = (w, a) => w / a;
-        const calculateAspectRatio = (span, a) => span**2 / a;
-        const calculateReynoldsNumber = (rho, v, l, mu) => (rho * v * l) / mu;
-
-        let myChart = null; // Chart instance holder
-
-        // --- UI LOGIC ---
-        function showForm() {
-            document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
-            document.getElementById('results').style.display = 'none';
-            document.getElementById('plot-container').style.display = 'none';
-            if (myChart) myChart.destroy();
-
-            const choice = document.getElementById('calculation_choice').value;
-            if (choice) {
-                document.getElementById(choice + '_form').classList.add('active');
-            }
-        }
-
-        function getValue(id) {
-            return parseFloat(document.getElementById(id).value);
-        }
-
-        function calculate(type) {
-            let resultText = '';
-            document.getElementById('results').style.display = 'none';
-            document.getElementById('plot-container').style.display = 'none';
-            if (myChart) myChart.destroy();
-
-            try {
-                switch (type) {
-                    case 'lift':
-                        const lift = calculateLift(getValue('lift_rho'), getValue('lift_velocity'), getValue('lift_wing_area'), getValue('lift_cl'));
-                        resultText = `Hesaplanan Kaldırma Kuvveti: <strong>${lift.toFixed(2)} N</strong>`;
-                        break;
-                    case 'drag':
-                        const drag = calculateDrag(getValue('drag_rho'), getValue('drag_velocity'), getValue('drag_wing_area'), getValue('drag_cd'));
-                        resultText = `Hesaplanan Sürükleme Kuvveti: <strong>${drag.toFixed(2)} N</strong>`;
-                        break;
-                    case 'thrust':
-                         const thrust = calculateThrustRequired(getValue('thrust_rho'), getValue('thrust_velocity'), getValue('thrust_wing_area'), getValue('thrust_cd'));
-                        resultText = `Hesaplanan Gerekli İtki: <strong>${thrust.toFixed(2)} N</strong>`;
-                        break;
-                    case 'power':
-                        const power = calculatePowerRequired(getValue('power_rho'), getValue('power_velocity'), getValue('power_wing_area'), getValue('power_cd'));
-                        resultText = `Hesaplanan Gerekli Güç: <strong>${power.toFixed(2)} Watt</strong>`;
-                        break;
-                    case 'stall_speed':
-                        const stall = calculateStallSpeed(getValue('stall_weight'), getValue('stall_rho'), getValue('stall_wing_area'), getValue('stall_cl_max'));
-                        resultText = `Hesaplanan Perdövites Hızı: <strong>${stall.toFixed(2)} m/s</strong>`;
-                        break;
-                    case 'wing_loading':
-                        const wl = calculateWingLoading(getValue('wl_weight'), getValue('wl_wing_area'));
-                        resultText = `Hesaplanan Kanat Yüklemesi: <strong>${wl.toFixed(2)} N/m²</strong>`;
-                        break;
-                    case 'aspect_ratio':
-                        const ar = calculateAspectRatio(getValue('ar_wingspan'), getValue('ar_wing_area'));
-                        resultText = `Hesaplanan Kanat Açıklık Oranı: <strong>${ar.toFixed(2)}</strong>`;
-                        break;
-                    case 'reynolds':
-                        const re = calculateReynoldsNumber(getValue('re_rho'), getValue('re_velocity'), getValue('re_chord_length'), getValue('re_viscosity'));
-                        resultText = `Hesaplanan Reynolds Sayısı: <strong>${re.toLocaleString(undefined, {maximumFractionDigits: 0})}</strong>`;
-                        break;
-                    case 'lift_plot':
-                        plotChart('lift');
-                        break;
-                    case 'drag_plot':
-                        plotChart('drag');
-                        break;
+    // In-memory database of all formulas
+    const formulasDB = {
+        aerodynamics: [
+            {
+                id: 'lift', name: 'Kaldırma Kuvveti', equation: 'L = 0.5 * ρ * V² * A * CL',
+                variables: { L: { name: 'Kaldırma Kuvveti', unit: 'N' }, rho: { name: 'Hava Yoğunluğu', unit: 'kg/m³', default: 1.225 }, V: { name: 'Hız', unit: 'm/s', default: 25 }, A: { name: 'Kanat Alanı', unit: 'm²', default: 0.5 }, CL: { name: 'Kaldırma Katsayısı', unit: '', default: 0.8 } },
+                solve: { L: ({ rho, V, A, CL }) => 0.5 * rho * V**2 * A * CL, rho: ({ L, V, A, CL }) => (2 * L) / (V**2 * A * CL), V: ({ L, rho, A, CL }) => Math.sqrt((2 * L) / (rho * A * CL)), A: ({ L, rho, V, CL }) => (2 * L) / (rho * V**2 * CL), CL: ({ L, rho, V, A }) => (2 * L) / (rho * V**2 * A) }
+            },
+            {
+                id: 'drag', name: 'Sürükleme Kuvveti', equation: 'D = 0.5 * ρ * V² * A * CD',
+                variables: { D: { name: 'Sürükleme Kuvveti', unit: 'N' }, rho: { name: 'Hava Yoğunluğu', unit: 'kg/m³', default: 1.225 }, V: { name: 'Hız', unit: 'm/s', default: 25 }, A: { name: 'Kanat Alanı', unit: 'm²', default: 0.5 }, CD: { name: 'Sürükleme Katsayısı', unit: '', default: 0.05 } },
+                solve: { D: ({ rho, V, A, CD }) => 0.5 * rho * V**2 * A * CD, rho: ({ D, V, A, CD }) => (2 * D) / (V**2 * A * CD), V: ({ D, rho, A, CD }) => Math.sqrt((2 * D) / (rho * A * CD)), A: ({ D, rho, V, CD }) => (2 * D) / (rho * V**2 * CD), CD: ({ D, rho, V, A }) => (2 * D) / (rho * V**2 * A) }
+            },
+            {
+                id: 'reynolds', name: 'Reynolds Sayısı', equation: 'Re = (ρ * V * c) / μ',
+                variables: { Re: { name: 'Reynolds Sayısı', unit: '' }, rho: { name: 'Hava Yoğunluğu', unit: 'kg/m³', default: 1.225 }, V: { name: 'Hız', unit: 'm/s', default: 25 }, c: { name: 'Karakteristik Uzunluk (Veter)', unit: 'm', default: 0.25 }, mu: { name: 'Dinamik Viskozite', unit: 'Pa·s', default: 0.0000181 } },
+                solve: { Re: ({ rho, V, c, mu }) => (rho * V * c) / mu, rho: ({ Re, V, c, mu }) => (Re * mu) / (V * c), V: ({ Re, rho, c, mu }) => (Re * mu) / (rho * c), c: ({ Re, rho, V, mu }) => (Re * mu) / (rho * V), mu: ({ rho, V, c, Re }) => (rho * V * c) / Re }
+            },
+            {
+                id: 'aspect_ratio', name: 'Kanat Açıklık Oranı', equation: 'AR = b² / A',
+                variables: { AR: { name: 'Açıklık Oranı', unit: '' }, b: { name: 'Kanat Açıklığı', unit: 'm', default: 2 }, A: { name: 'Kanat Alanı', unit: 'm²', default: 0.5 } },
+                solve: { AR: ({ b, A }) => b**2 / A, b: ({ AR, A }) => Math.sqrt(AR * A), A: ({ AR, b }) => b**2 / AR }
+            },
+            {
+                id: 'induced_drag', name: 'İndüklenmiş Sürükleme Katsayısı', equation: 'CDi = CL² / (π * AR * e)',
+                variables: { CDi: { name: 'İndüklenmiş Sürükleme K.', unit: '' }, CL: { name: 'Kaldırma Katsayısı', unit: '', default: 0.8 }, AR: { name: 'Açıklık Oranı', unit: '', default: 8 }, e: { name: 'Oswald Verimlilik Faktörü', unit: '', default: 0.85 } },
+                solve: { CDi: ({ CL, AR, e }) => CL**2 / (Math.PI * AR * e), CL: ({ CDi, AR, e }) => Math.sqrt(CDi * Math.PI * AR * e), AR: ({ CL, CDi, e }) => CL**2 / (Math.PI * CDi * e), e: ({ CL, CDi, AR }) => CL**2 / (Math.PI * CDi * AR) }
+            },
+        ],
+        performance: [
+            {
+                id: 'wing_loading', name: 'Kanat Yüklemesi', equation: 'WL = W / A',
+                variables: { WL: { name: 'Kanat Yüklemesi', unit: 'N/m²' }, W: { name: 'Ağırlık', unit: 'N', default: 50 }, A: { name: 'Kanat Alanı', unit: 'm²', default: 0.5 } },
+                solve: { WL: ({ W, A }) => W / A, W: ({ WL, A }) => WL * A, A: ({ W, WL }) => W / WL }
+            },
+            {
+                id: 'stall_speed', name: 'Perdövites Hızı', equation: 'Vs = √(2 * W / (ρ * A * CL_max))',
+                variables: { Vs: { name: 'Perdövites Hızı', unit: 'm/s' }, W: { name: 'Ağırlık', unit: 'N', default: 50 }, rho: { name: 'Hava Yoğunluğu', unit: 'kg/m³', default: 1.225 }, A: { name: 'Kanat Alanı', unit: 'm²', default: 0.5 }, CL_max: { name: 'Maks. Kaldırma Katsayısı', unit: '', default: 1.2 } },
+                solve: { Vs: ({ W, rho, A, CL_max }) => Math.sqrt((2 * W) / (rho * A * CL_max)), W: ({ Vs, rho, A, CL_max }) => 0.5 * rho * Vs**2 * A * CL_max, rho: ({ W, Vs, A, CL_max }) => (2 * W) / (Vs**2 * A * CL_max), A: ({ W, Vs, rho, CL_max }) => (2 * W) / (rho * Vs**2 * CL_max), CL_max: ({ W, Vs, rho, A }) => (2 * W) / (rho * Vs**2 * A) }
+            },
+            {
+                id: 'thrust_required', name: 'Gerekli İtki (Düz Uçuş)', equation: 'T_req = D',
+                variables: { T_req: { name: 'Gerekli İtki', unit: 'N' }, D: { name: 'Sürükleme Kuvveti', unit: 'N', default: 10 } },
+                solve: { T_req: ({ D }) => D, D: ({ T_req }) => T_req }
+            },
+            {
+                id: 'power_required', name: 'Gerekli Güç', equation: 'P_req = T_req * V',
+                variables: { P_req: { name: 'Gerekli Güç', unit: 'W' }, T_req: { name: 'Gerekli İtki', unit: 'N', default: 10 }, V: { name: 'Hız', unit: 'm/s', default: 25 } },
+                solve: { P_req: ({ T_req, V }) => T_req * V, T_req: ({ P_req, V }) => P_req / V, V: ({ P_req, T_req }) => P_req / T_req }
+            },
+            {
+                id: 'rate_of_climb', name: 'Tırmanma Oranı', equation: 'ROC = (P_avail - P_req) / W',
+                variables: { ROC: { name: 'Tırmanma Oranı', unit: 'm/s' }, P_avail: { name: 'Mevcut Güç', unit: 'W', default: 300 }, P_req: { name: 'Gerekli Güç', unit: 'W', default: 250 }, W: { name: 'Ağırlık', unit: 'N', default: 50 } },
+                solve: { ROC: ({ P_avail, P_req, W }) => (P_avail - P_req) / W, P_avail: ({ ROC, P_req, W }) => (ROC * W) + P_req, P_req: ({ P_avail, ROC, W }) => P_avail - (ROC * W), W: ({ P_avail, P_req, ROC }) => (P_avail - P_req) / ROC }
+            },
+            {
+                id: 'climb_angle', name: 'Tırmanma Açısı', equation: 'sin(γ) = (T - D) / W',
+                variables: { gamma: { name: 'Tırmanma Açısı', unit: '°' }, T: { name: 'İtki', unit: 'N', default: 12 }, D: { name: 'Sürükleme', unit: 'N', default: 10 }, W: { name: 'Ağırlık', unit: 'N', default: 50 } },
+                solve: { gamma: ({ T, D, W }) => Math.asin((T - D) / W) * (180 / Math.PI), T: ({ gamma, D, W }) => (Math.sin(gamma * Math.PI / 180) * W) + D, D: ({ T, gamma, W }) => T - (Math.sin(gamma * Math.PI / 180) * W), W: ({ T, D, gamma }) => (T - D) / Math.sin(gamma * Math.PI / 180) }
+            },
+             {
+                id: 'glide_ratio', name: 'Süzülme Oranı', equation: 'L/D = CL / CD',
+                variables: { LD: { name: 'Süzülme Oranı', unit: '' }, CL: { name: 'Kaldırma Katsayısı', unit: '', default: 0.8 }, CD: { name: 'Sürükleme Katsayısı', unit: '', default: 0.05 } },
+                solve: { LD: ({ CL, CD }) => CL / CD, CL: ({ LD, CD }) => LD * CD, CD: ({ CL, LD }) => CL / LD }
+            },
+        ],
+        maneuverability: [
+            {
+                id: 'load_factor', name: 'Yük Faktörü (Yatışlı Dönüş)', equation: 'n = 1 / cos(φ)',
+                variables: { n: { name: 'Yük Faktörü', unit: 'g' }, phi: { name: 'Yatış Açısı', unit: '°', default: 30 } },
+                solve: { n: ({ phi }) => 1 / Math.cos(phi * Math.PI / 180), phi: ({ n }) => Math.acos(1 / n) * (180 / Math.PI) }
+            },
+            {
+                id: 'turn_radius', name: 'Dönüş Yarıçapı', equation: 'R = V² / (g * √(n² - 1))',
+                variables: { R: { name: 'Dönüş Yarıçapı', unit: 'm' }, V: { name: 'Hız', unit: 'm/s', default: 25 }, g: { name: 'Yerçekimi İvmesi', unit: 'm/s²', default: 9.81 }, n: { name: 'Yük Faktörü', unit: 'g', default: 1.15 } },
+                solve: { R: ({ V, g, n }) => V**2 / (g * Math.sqrt(n**2 - 1)), V: ({ R, g, n }) => Math.sqrt(R * g * Math.sqrt(n**2 - 1)), n: ({ V, R, g }) => Math.sqrt(((V**2 / (R * g))**2) + 1) }
+            },
+            {
+                id: 'turn_rate', name: 'Dönüş Oranı', equation: 'ω = g * √(n² - 1) / V',
+                variables: { omega: { name: 'Dönüş Oranı', unit: '°/s' }, g: { name: 'Yerçekimi İvmesi', unit: 'm/s²', default: 9.81 }, n: { name: 'Yük Faktörü', unit: 'g', default: 1.15 }, V: { name: 'Hız', unit: 'm/s', default: 25 } },
+                solve: { omega: ({ g, n, V }) => (g * Math.sqrt(n**2 - 1) / V) * (180 / Math.PI), n: ({ omega, V, g }) => Math.sqrt(((omega * Math.PI/180 * V / g)**2) + 1), V: ({ g, n, omega }) => g * Math.sqrt(n**2 - 1) / (omega * Math.PI/180) }
+            },
+        ],
+        structures: [
+            {
+                id: 'wing_bending_stress', name: 'Kanat Kökü Eğilme Gerilmesi', equation: 'σ = (W * n * b) / (2 * I * c)',
+                variables: { sigma: { name: 'Eğilme Gerilmesi', unit: 'Pa' }, W: { name: 'Ağırlık', unit: 'N', default: 50 }, n: { name: 'Yük Faktörü', unit: 'g', default: 2.5 }, b: { name: 'Kanat Açıklığı', unit: 'm', default: 2 }, I: { name: 'Alan Eylemsizlik Momenti', unit: 'm⁴', default: 0.00001 }, c: { name: 'Maksimum Kalınlık', unit: 'm', default: 0.03 } },
+                solve: {
+                    sigma: ({ W, n, b, I, c }) => (W * n * b) / (2 * I * c),
+                    W: ({ sigma, n, b, I, c }) => (sigma * 2 * I * c) / (n * b),
+                    n: ({ sigma, W, b, I, c }) => (sigma * 2 * I * c) / (W * b),
+                    b: ({ sigma, W, n, I, c }) => (sigma * 2 * I * c) / (W * n),
+                    I: ({ W, n, b, sigma, c }) => (W * n * b) / (sigma * 2 * c),
+                    c: ({ W, n, b, sigma, I }) => (W * n * b) / (sigma * 2 * I)
                 }
+            },
+            {
+                id: 'ultimate_load_factor', name: 'Maksimum Yük Faktörü', equation: 'n_ult = n_lim * 1.5',
+                variables: { n_ult: { name: 'Maksimum Yük Faktörü', unit: 'g' }, n_lim: { name: 'Limit Yük Faktörü', unit: 'g', default: 4 } },
+                solve: { n_ult: ({ n_lim }) => n_lim * 1.5, n_lim: ({ n_ult }) => n_ult / 1.5 }
+            },
+        ],
+        high_speed: [
+             {
+                id: 'speed_of_sound', name: 'Ses Hızı', equation: 'a = √(γ * R * T)',
+                variables: { a: { name: 'Ses Hızı', unit: 'm/s' }, gamma: { name: 'Özgül Isı Oranı (Hava)', unit: '', default: 1.4 }, R: { name: 'Spesifik Gaz Sabiti (Hava)', unit: 'J/(kg·K)', default: 287 }, T: { name: 'Sıcaklık', unit: 'K', default: 288.15 } },
+                solve: { a: ({ gamma, R, T }) => Math.sqrt(gamma * R * T), T: ({ a, gamma, R }) => a**2 / (gamma * R) }
+            },
+             {
+                id: 'mach_number', name: 'Mach Sayısı', equation: 'M = V / a',
+                variables: { M: { name: 'Mach Sayısı', unit: '' }, V: { name: 'Hız', unit: 'm/s', default: 100 }, a: { name: 'Ses Hızı', unit: 'm/s', default: 340.3 } },
+                solve: { M: ({ V, a }) => V / a, V: ({ M, a }) => M * a, a: ({ V, M }) => V / M }
+            },
+             {
+                id: 'dynamic_pressure', name: 'Dinamik Basınç', equation: 'q = 0.5 * ρ * V²',
+                variables: { q: { name: 'Dinamik Basınç', unit: 'Pa' }, rho: { name: 'Hava Yoğunluğu', unit: 'kg/m³', default: 1.225 }, V: { name: 'Hız', unit: 'm/s', default: 25 } },
+                solve: { q: ({ rho, V }) => 0.5 * rho * V**2, rho: ({ q, V }) => 2 * q / V**2, V: ({ q, rho }) => Math.sqrt(2 * q / rho) }
+            },
+        ]
+    };
 
-                if (resultText) {
-                    const resultsDiv = document.getElementById('results');
-                    resultsDiv.innerHTML = resultText;
-                    resultsDiv.style.display = 'block';
-                }
-            } catch (e) {
-                alert('Hesaplama sırasında bir hata oluştu. Lütfen girdilerinizi kontrol edin.');
-                console.error(e);
-            }
-        }
+    // --- DYNAMIC UI BUILDER ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const navContainer = document.getElementById('sidebarNav');
+        const cardsContainer = document.getElementById('formula-cards-container');
 
-        function plotChart(type) {
-            const plotContainer = document.getElementById('plot-container');
-            plotContainer.style.display = 'block';
-            const ctx = document.getElementById('myChart').getContext('2d');
+        // Build sidebar and formula cards from the database
+        Object.keys(formulasDB).forEach(category => {
+            formulasDB[category].forEach(formula => {
+                // Create Sidebar Link
+                const link = document.createElement('a');
+                link.href = `#${formula.id}`;
+                link.textContent = formula.name;
+                link.onclick = (e) => {
+                    e.preventDefault();
+                    showCard(formula.id);
+                };
+                navContainer.appendChild(link);
 
-            let labels = [];
-            let data = [];
-            let chartLabel = '';
-            let yAxisLabel = '';
-
-            const min_v = (type === 'lift') ? getValue('lp_min_v') : getValue('dp_min_v');
-            const max_v = (type === 'lift') ? getValue('lp_max_v') : getValue('dp_max_v');
-
-            for (let v = min_v; v <= max_v; v += (max_v - min_v) / 50) {
-                labels.push(v.toFixed(2));
-                if (type === 'lift') {
-                    const rho = getValue('lp_rho');
-                    const area = getValue('lp_wing_area');
-                    const cl = getValue('lp_cl');
-                    data.push(calculateLift(rho, v, area, cl));
-                    chartLabel = 'Kaldırma Kuvveti';
-                    yAxisLabel = 'Kaldırma Kuvveti (N)';
-                } else {
-                    const rho = getValue('dp_rho');
-                    const area = getValue('dp_wing_area');
-                    const cd = getValue('dp_cd');
-                    data.push(calculateDrag(rho, v, area, cd));
-                    chartLabel = 'Sürükleme Kuvveti';
-                    yAxisLabel = 'Sürükleme Kuvveti (N)';
-                }
-            }
-
-            myChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: chartLabel,
-                        data: data,
-                        borderColor: 'rgba(0, 123, 255, 1)',
-                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                        fill: true,
-                        tension: 0.1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        x: {
-                            title: { display: true, text: 'Hız (m/s)' }
-                        },
-                        y: {
-                            title: { display: true, text: yAxisLabel }
-                        }
-                    }
-                }
+                // Create Formula Card
+                cardsContainer.appendChild(createFormulaCard(formula));
             });
+        });
+    });
+
+    function createFormulaCard(formula) {
+        const card = document.createElement('div');
+        card.id = formula.id;
+        card.className = 'formula-card';
+        card.innerHTML = `
+            <h3>${formula.name} (${formula.equation})</h3>
+            <div class="solver-section">
+                <h4>Hesaplayıcı</h4>
+                <p>Hesaplamak istediğiniz değişkeni seçin ve diğer alanları doldurun.</p>
+                <div class="input-grid">
+                    ${Object.keys(formula.variables).map(key => `
+                        <div class="input-group">
+                            <input type="radio" id="${formula.id}_radio_${key}" name="${formula.id}_solve_for" value="${key}" onchange="toggleInput('${formula.id}', '${key}')">
+                            <label for="${formula.id}_${key}">${formula.variables[key].name} (${formula.variables[key].unit})</label>
+                            <input type="number" id="${formula.id}_${key}" value="${formula.variables[key].default || ''}" step="any">
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="button-container">
+                    <button onclick="calculate('${formula.id}')">Hesapla</button>
+                </div>
+                <div class="result-box" id="${formula.id}_result"></div>
+            </div>
+            <div class="plotter-section">
+                <h4>Grafik Çizici</h4>
+                <div class="plot-controls">
+                    <div class="input-grid">
+                        <div class="form-group">
+                            <label for="${formula.id}_plot_x_axis">X-Ekseni Değişkeni</label>
+                            <select id="${formula.id}_plot_x_axis">
+                                ${Object.keys(formula.variables).map(key => `<option value="${key}">${formula.variables[key].name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="${formula.id}_plot_min">Başlangıç Değeri</label>
+                            <input type="number" id="${formula.id}_plot_min" value="1" step="any">
+                        </div>
+                        <div class="form-group">
+                            <label for="${formula.id}_plot_max">Bitiş Değeri</label>
+                            <input type="number" id="${formula.id}_plot_max" value="100" step="any">
+                        </div>
+                    </div>
+                </div>
+                <div class="button-container">
+                     <button onclick="plotChart('${formula.id}')">Grafiği Çiz</button>
+                </div>
+                <canvas id="${formula.id}_chart" style="margin-top: 20px;"></canvas>
+            </div>
+        `;
+        return card;
+    }
+
+    // --- UI INTERACTIVITY ---
+    function showCard(id) {
+        // Hide all cards
+        document.querySelectorAll('.formula-card').forEach(card => card.classList.remove('active'));
+        // Show the selected card
+        document.getElementById(id).classList.add('active');
+        // Update sidebar active link
+        document.querySelectorAll('.sidebar-nav a').forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === `#${id}`) {
+                link.classList.add('active');
+            }
+        });
+        // Select first radio button by default
+        const firstRadio = document.querySelector(`#${id} input[type="radio"]`);
+        if (firstRadio) {
+            firstRadio.checked = true;
+            firstRadio.dispatchEvent(new Event('change'));
         }
+    }
+
+    function toggleInput(formId, variableKey) {
+        // Disable the input for the variable being solved for
+        document.querySelectorAll(`#${formId} .input-group input[type="number"]`).forEach(input => {
+            input.disabled = false;
+        });
+        document.getElementById(`${formId}_${variableKey}`).disabled = true;
+    }
+    // Chart instance holder for each card
+    let charts = {};
+
+    // --- CALCULATION LOGIC & PLOTTING ---
+    function plotChart(formId) {
+        const formula = findFormulaById(formId);
+        const resultVariable = document.querySelector(`input[name="${formId}_solve_for"]:checked`).value;
+        const xAxisVariable = document.getElementById(`${formId}_plot_x_axis`).value;
+
+        if (xAxisVariable === resultVariable) {
+            alert("X-ekseni değişkeni ile hesaplanan değişken aynı olamaz. Lütfen farklı bir X-ekseni seçin.");
+            return;
+        }
+
+        const minVal = parseFloat(document.getElementById(`${formId}_plot_min`).value);
+        const maxVal = parseFloat(document.getElementById(`${formId}_plot_max`).value);
+        if (isNaN(minVal) || isNaN(maxVal) || minVal >= maxVal) {
+            alert("Lütfen geçerli bir başlangıç ve bitiş aralığı girin.");
+            return;
+        }
+
+        const fixedInputs = {};
+        let allValid = true;
+        Object.keys(formula.variables).forEach(key => {
+            if (key !== resultVariable && key !== xAxisVariable) {
+                const value = parseFloat(document.getElementById(`${formId}_${key}`).value);
+                if (isNaN(value)) allValid = false;
+                fixedInputs[key] = value;
+            }
+        });
+
+        if (!allValid) {
+            alert("Grafik çizimi için lütfen hesaplayıcıdaki diğer tüm alanları geçerli sayılarla doldurun.");
+            return;
+        }
+
+        const labels = [];
+        const data = [];
+        const steps = 50;
+        for (let i = 0; i <= steps; i++) {
+            const stepVal = minVal + (maxVal - minVal) * (i / steps);
+            labels.push(stepVal.toFixed(2));
+
+            const currentInputs = { ...fixedInputs, [xAxisVariable]: stepVal };
+            try {
+                const result = formula.solve[resultVariable](currentInputs);
+                data.push(result);
+            } catch (e) {
+                data.push(NaN); // Push NaN if calculation fails for a point
+            }
+        }
+
+        const ctx = document.getElementById(`${formId}_chart`).getContext('2d');
+        if (charts[formId]) {
+            charts[formId].destroy();
+        }
+        charts[formId] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: `${formula.variables[resultVariable].name}`,
+                    data: data,
+                    borderColor: 'rgba(0, 123, 255, 1)',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { title: { display: true, text: `${formula.variables[xAxisVariable].name} (${formula.variables[xAxisVariable].unit})` } },
+                    y: { title: { display: true, text: `${formula.variables[resultVariable].name} (${formula.variables[resultVariable].unit})` } }
+                }
+            }
+        });
+    }
+
+    function calculate(formId) {
+        const formula = findFormulaById(formId);
+        const solveFor = document.querySelector(`input[name="${formId}_solve_for"]:checked`).value;
+
+        const inputs = {};
+        let allValid = true;
+        Object.keys(formula.variables).forEach(key => {
+            if (key !== solveFor) {
+                const inputElem = document.getElementById(`${formId}_${key}`);
+                const value = parseFloat(inputElem.value);
+                if (isNaN(value)) {
+                    allValid = false;
+                }
+                inputs[key] = value;
+            }
+        });
+
+        if (!allValid) {
+            alert("Lütfen tüm girdi alanlarını geçerli sayılarla doldurun.");
+            return;
+        }
+
+        try {
+            const result = formula.solve[solveFor](inputs);
+            const resultBox = document.getElementById(`${formId}_result`);
+            const resultUnit = formula.variables[solveFor].unit;
+            resultBox.innerHTML = `<strong>Sonuç:</strong> ${result.toFixed(3)} ${resultUnit}`;
+            resultBox.style.display = 'block';
+
+            // Also update the disabled input field with the result
+            document.getElementById(`${formId}_${solveFor}`).value = result.toFixed(3);
+
+        } catch (e) {
+            alert(`Hesaplama sırasında bir hata oluştu: ${e.message}`);
+        }
+    }
+
+    function findFormulaById(id) {
+        for (const category of Object.values(formulasDB)) {
+            const formula = category.find(f => f.id === id);
+            if (formula) return formula;
+        }
+        return null;
+    }
 
     </script>
 </body>
