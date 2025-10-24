@@ -571,7 +571,7 @@
                 projectData = {};
             }
 
-            projectData.analysis = {};
+            projectData.analysis = projectData.analysis || {};
 
             projectData.analysis.weightBalance = [];
             document.querySelectorAll('#cg-table tbody tr').forEach(row => {
@@ -590,7 +590,7 @@
             };
 
             for (const [section, ids] of Object.entries(fieldsToSave)) {
-                projectData.analysis[section] = {};
+                projectData.analysis[section] = projectData.analysis[section] || {};
                 ids.forEach(id => {
                     const element = document.getElementById(id);
                     if (element) projectData.analysis[section][id] = element.value;

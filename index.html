@@ -485,10 +485,10 @@
             projectData = {};
         }
 
-        projectData.calculator = {};
+        projectData.calculator = projectData.calculator || {};
 
         Object.values(formulasDB).flat().forEach(formula => {
-            projectData.calculator[formula.id] = {};
+            projectData.calculator[formula.id] = projectData.calculator[formula.id] || {};
             Object.keys(formula.variables).forEach(varKey => {
                 const inputElement = document.getElementById(`${formula.id}_${varKey}`);
                 if (inputElement) {

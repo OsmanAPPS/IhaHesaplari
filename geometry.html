@@ -220,6 +220,12 @@
             updateAllVisuals();
         });
 
+        function updateAllVisuals() {
+            const currentParams = getParams();
+            drawAircraft(currentParams); // Update 2D
+            updateAircraftModel(currentParams); // Update 3D
+        }
+
         function getParams() {
             const paramStructure = {
                 fuselage: {}, wing: {}, horizontalStab: {}, verticalStab: {}
