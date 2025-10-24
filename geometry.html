@@ -63,10 +63,9 @@
             <a href="airfoil.html">Airfoil Analizi</a>
         </nav>
         <div class="sidebar-section">
-            <h3>Proje</h3>
-            <button id="save-button" class="sidebar-button save">Projeyi Kaydet</button>
-            <button id="load-button" class="sidebar-button load">Projeyi Yükle</button>
-            <button id="clear-button" class="sidebar-button clear">Verileri Temizle</button>
+            <h3>Proje Yönetimi</h3>
+            <button id="clear-button" class="sidebar-button clear">Proje Verilerini Temizle</button>
+            <p style="font-size: 0.8rem; color: #6c757d; margin-top: 10px;">Tüm verileriniz sayfalar arasında otomatik olarak kaydedilir.</p>
         </div>
     </div>
 
@@ -193,7 +192,7 @@
 
         // --- 2D and 3D MAIN SCRIPT ---
         document.addEventListener('DOMContentLoaded', () => {
-            init3D(); // Initialize 3D scene
+            init3D();
 
             const params = {
                 fuselage: { length: 1200, noseLength: 250, tailLength: 450, diameter: 150, tailDiameter: 50 },
@@ -209,17 +208,16 @@
                 panel.innerHTML += createSection(title, params[key], key);
             }
 
-            function updateAllVisuals() {
-                const currentParams = getParams();
-                drawAircraft(currentParams); // Update 2D
-                updateAircraftModel(currentParams); // Update 3D
-            }
+            loadProjectData(); // Otomatik Yükleme
 
-            panel.querySelectorAll('input').forEach(input => {
-                input.addEventListener('input', updateAllVisuals);
+            panel.addEventListener('input', (e) => {
+                if(e.target.tagName === 'INPUT') {
+                    updateAllVisuals();
+                    saveProjectData(); // Otomatik Kaydetme
+                }
             });
 
-            updateAllVisuals(); // Initial draw
+            updateAllVisuals();
         });
 
         function getParams() {
@@ -432,35 +430,24 @@
         }
 
         // --- PROJECT SAVE/LOAD LOGIC ---
-        document.getElementById('save-button').addEventListener('click', saveProjectData);
-        document.getElementById('load-button').addEventListener('click', loadProjectData);
         document.getElementById('clear-button').addEventListener('click', clearProjectData);
 
         function clearProjectData() {
             if (confirm('Kaydedilmiş tüm proje verilerini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
                 localStorage.removeItem('uavProjectData');
-                alert('Proje verileri başarıyla silindi.');
                 location.reload();
             }
         }
 
         function loadProjectData() {
             const projectDataString = localStorage.getItem('uavProjectData');
-            if (!projectDataString) {
-                alert('Kaydedilmiş proje verisi bulunamadı.');
-                return;
-            }
+            if (!projectDataString) return;
 
             try {
                 const projectData = JSON.parse(projectDataString);
-                if (!projectData.geometry) {
-                    alert('Bu sayfa için kaydedilmiş geometri verisi bulunamadı.');
-                    return;
-                }
+                if (!projectData.geometry) return;
 
                 const geometryData = projectData.geometry;
-
-                // Geometri girdi alanlarını doldur
                 for (const section in geometryData) {
                     for (const param in geometryData[section]) {
                         const inputElement = document.getElementById(`${section}_${param}`);
@@ -469,20 +456,13 @@
                         }
                     }
                 }
-
-                // Görselleştirmeleri güncelle
                 updateAllVisuals();
-
-                alert('Proje başarıyla yüklendi!');
-
             } catch (e) {
                 console.error("Proje yüklenirken hata oluştu:", e);
-                alert('Proje yüklenirken bir hata oluştu. Lütfen konsolu kontrol edin.');
             }
         }
 
         function saveProjectData() {
-            // Mevcut proje verilerini yüklemeyi dene, yoksa yeni bir nesne oluştur
             let projectData = {};
             try {
                 const existingData = localStorage.getItem('uavProjectData');
@@ -491,18 +471,15 @@
                 }
             } catch (e) {
                 console.error("Mevcut proje verileri okunurken hata oluştu:", e);
-                projectData = {}; // Hata durumunda sıfırla
+                projectData = {};
             }
 
-            // Geometri verilerini `getParams` fonksiyonundan al
             projectData.geometry = getParams();
 
             try {
                 localStorage.setItem('uavProjectData', JSON.stringify(projectData));
-                alert('Proje başarıyla kaydedildi!');
             } catch (e) {
                 console.error("Projeyi kaydederken hata oluştu:", e);
-                alert('Proje kaydedilirken bir hata oluştu. Lütfen konsolu kontrol edin.');
             }
         }
 

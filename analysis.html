@@ -56,10 +56,9 @@
             <a href="airfoil.html">Airfoil Analizi</a>
         </nav>
         <div class="sidebar-section">
-            <h3>Proje</h3>
-            <button id="save-button" class="sidebar-button save">Projeyi Kaydet</button>
-            <button id="load-button" class="sidebar-button load">Projeyi Yükle</button>
-            <button id="clear-button" class="sidebar-button clear">Verileri Temizle</button>
+            <h3>Proje Yönetimi</h3>
+            <button id="clear-button" class="sidebar-button clear">Proje Verilerini Temizle</button>
+            <p style="font-size: 0.8rem; color: #6c757d; margin-top: 10px;">Tüm verileriniz sayfalar arasında otomatik olarak kaydedilir.</p>
         </div>
     </div>
 
@@ -227,34 +226,26 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const addComponentBtn = document.getElementById('add-component-btn');
-            const cgTableBody = document.querySelector('#cg-table tbody');
+            loadProjectData(); // Otomatik Yükleme
 
-            // Initial components
-            const initialComponents = [
-                { name: 'Gövde', weight: 800, position: 600 },
-                { name: 'Motor', weight: 250, position: 50 },
-                { name: 'Batarya', weight: 400, position: 200 },
-                { name: 'ESC', weight: 50, position: 150 },
-                { name: 'Pervane', weight: 30, position: 10 },
-                { name: 'Kanat', weight: 500, position: 550 },
-                { name: 'Kuyruk', weight: 150, position: 1100 }
-            ];
-
-            initialComponents.forEach(comp => addComponentRow(comp.name, comp.weight, comp.position));
-            calculateCG();
-
-            addComponentBtn.addEventListener('click', () => {
+            // Tüm sayfa için olay delegasyonu kullanarak otomatik kaydetmeyi ayarla
+            document.querySelector('.main-content').addEventListener('input', saveProjectData);
+            document.getElementById('add-component-btn').addEventListener('click', () => {
                 addComponentRow('', 0, 0);
+                saveProjectData();
             });
-
-            cgTableBody.addEventListener('input', calculateCG);
-            cgTableBody.addEventListener('click', (e) => {
+            document.querySelector('#cg-table tbody').addEventListener('click', (e) => {
                 if (e.target.classList.contains('remove-btn')) {
                     e.target.closest('tr').remove();
                     calculateCG();
+                    saveProjectData();
                 }
             });
+
+            // Başlangıç hesaplamalarını tetikle
+            calculateCG();
+            runPerformanceAnalysis();
+            calculateElectronics();
         });
 
         function addComponentRow(name, weight, position) {
@@ -509,14 +500,11 @@
         }
 
         // --- PROJECT SAVE/LOAD LOGIC ---
-        document.getElementById('save-button').addEventListener('click', saveProjectData);
-        document.getElementById('load-button').addEventListener('click', loadProjectData);
         document.getElementById('clear-button').addEventListener('click', clearProjectData);
 
         function clearProjectData() {
             if (confirm('Kaydedilmiş tüm proje verilerini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
                 localStorage.removeItem('uavProjectData');
-                alert('Proje verileri başarıyla silindi.');
                 location.reload();
             }
         }
@@ -524,28 +512,34 @@
         function loadProjectData() {
             const projectDataString = localStorage.getItem('uavProjectData');
             if (!projectDataString) {
-                alert('Kaydedilmiş proje verisi bulunamadı.');
+                // Kayıtlı veri yoksa, varsayılan bileşenleri ekle
+                const initialComponents = [
+                    { name: 'Gövde', weight: 800, position: 600 }, { name: 'Motor', weight: 250, position: 50 },
+                    { name: 'Batarya', weight: 400, position: 200 }, { name: 'ESC', weight: 50, position: 150 },
+                    { name: 'Pervane', weight: 30, position: 10 }, { name: 'Kanat', weight: 500, position: 550 },
+                    { name: 'Kuyruk', weight: 150, position: 1100 }
+                ];
+                initialComponents.forEach(comp => addComponentRow(comp.name, comp.weight, comp.position));
                 return;
             }
 
             try {
                 const projectData = JSON.parse(projectDataString);
-                if (!projectData.analysis) {
-                    alert('Bu sayfa için kaydedilmiş analiz verisi bulunamadı.');
-                    return;
-                }
+                if (!projectData.analysis) return;
+
                 const analysisData = projectData.analysis;
 
-                // 1. Dinamik Ağırlık ve Denge tablosunu yeniden oluştur
                 const cgTableBody = document.querySelector('#cg-table tbody');
-                cgTableBody.innerHTML = ''; // Mevcut satırları temizle
-                if (analysisData.weightBalance) {
+                cgTableBody.innerHTML = '';
+                if (analysisData.weightBalance && analysisData.weightBalance.length > 0) {
                     analysisData.weightBalance.forEach(comp => {
                         addComponentRow(comp.name, comp.weight, comp.position);
                     });
+                } else {
+                     // Eğer kayıtlı bileşen yoksa, boş bir satır ekle
+                    addComponentRow('', 0, 0);
                 }
 
-                // 2. Diğer bölümlerdeki alanları doldur
                 const fieldsToLoad = {
                     stability: ['stab_mac', 'stab_ac_wing', 'stab_tail_area', 'stab_wing_area', 'stab_tail_arm', 'stab_tail_efficiency'],
                     performance: ['perf_rho', 'perf_cd0', 'perf_e', 'perf_ar', 'perf_static_thrust', 'perf_max_v'],
@@ -563,48 +557,31 @@
                         });
                     }
                 }
-
-                // 3. Tüm hesaplamaları ve görselleştirmeleri yeniden çalıştır
-                calculateCG();
-                runPerformanceAnalysis();
-                calculateElectronics();
-
-                alert('Proje başarıyla yüklendi!');
-
             } catch (e) {
                 console.error("Proje yüklenirken hata oluştu:", e);
-                alert('Proje yüklenirken bir hata oluştu. Lütfen konsolu kontrol edin.');
             }
         }
 
         function saveProjectData() {
-            // Mevcut proje verilerini yüklemeyi dene, yoksa yeni bir nesne oluştur
             let projectData = {};
             try {
                 const existingData = localStorage.getItem('uavProjectData');
-                if (existingData) {
-                    projectData = JSON.parse(existingData);
-                }
+                if (existingData) projectData = JSON.parse(existingData);
             } catch (e) {
-                console.error("Mevcut proje verileri okunurken hata oluştu:", e);
-                projectData = {}; // Hata durumunda sıfırla
+                projectData = {};
             }
 
             projectData.analysis = {};
 
-            // 1. Ağırlık ve Denge verilerini topla (dinamik tablo)
             projectData.analysis.weightBalance = [];
-            const cgRows = document.querySelectorAll('#cg-table tbody tr');
-            cgRows.forEach(row => {
-                const component = {
+            document.querySelectorAll('#cg-table tbody tr').forEach(row => {
+                projectData.analysis.weightBalance.push({
                     name: row.querySelector('input[type="text"]').value,
                     weight: row.querySelector('.weight').value,
                     position: row.querySelector('.position').value
-                };
-                projectData.analysis.weightBalance.push(component);
+                });
             });
 
-            // 2. Diğer tüm analiz bölümlerindeki verileri topla
             const fieldsToSave = {
                 stability: ['stab_mac', 'stab_ac_wing', 'stab_tail_area', 'stab_wing_area', 'stab_tail_arm', 'stab_tail_efficiency'],
                 performance: ['perf_rho', 'perf_cd0', 'perf_e', 'perf_ar', 'perf_static_thrust', 'perf_max_v'],
@@ -616,18 +593,14 @@
                 projectData.analysis[section] = {};
                 ids.forEach(id => {
                     const element = document.getElementById(id);
-                    if (element) {
-                        projectData.analysis[section][id] = element.value;
-                    }
+                    if (element) projectData.analysis[section][id] = element.value;
                 });
             }
 
             try {
                 localStorage.setItem('uavProjectData', JSON.stringify(projectData));
-                alert('Proje başarıyla kaydedildi!');
             } catch (e) {
                 console.error("Projeyi kaydederken hata oluştu:", e);
-                alert('Proje kaydedilirken bir hata oluştu. Lütfen konsolu kontrol edin.');
             }
         }
 
