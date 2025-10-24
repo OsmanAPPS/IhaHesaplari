@@ -222,7 +222,14 @@
                 chartConfig = {
                     type: 'scatter',
                     data: { datasets: [{ label: 'Airfoil Shape', data: coords, showLine: true, borderColor: '#0d6efd', backgroundColor: 'transparent', pointRadius: 0 }] },
-                    options: { maintainAspectRatio: false, scales: { x: { title: { text: 'Chord' } }, y: { title: { text: 'Thickness' }, scaleLabel: { display: true }, afterFit: (scale) => { scale.width = 60; } } }, plugins: { title: { text: `${data.name} Geometry` } } }
+                    options: {
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { title: { display: true, text: 'Chord' } },
+                            y: { title: { display: true, text: 'Thickness' }, afterFit: (scale) => { scale.width = 60; } }
+                        },
+                        plugins: { title: { display: true, text: `${data.name} Geometry` } }
+                    }
                 };
             } else {
                 let xVar, yVar, xLabel, yLabel, title;
