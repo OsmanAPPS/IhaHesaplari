@@ -24,6 +24,30 @@
         .sidebar-nav a { display: block; padding: 10px; color: var(--text-dark); text-decoration: none; border-radius: 5px; margin-bottom: 5px; }
         .sidebar-nav a:hover, .sidebar-nav a.active { background-color: var(--primary-color); color: #fff; }
         h1 { color: var(--text-dark); }
+        .sidebar-divider {
+            height: 1px;
+            background-color: var(--gray-border);
+            margin: 15px 0;
+        }
+        .sidebar-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 8px;
+            border: 1px solid var(--gray-border);
+            border-radius: 5px;
+            background-color: #fff;
+            color: var(--text-dark);
+            cursor: pointer;
+            text-align: left;
+            font-size: 15px;
+        }
+        .sidebar-btn:hover {
+            background-color: var(--light-gray);
+        }
+        .sidebar-btn.save { border-left: 3px solid #198754; }
+        .sidebar-btn.load { border-left: 3px solid #0d6efd; }
+        .sidebar-btn.clear { border-left: 3px solid #dc3545; }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
         .form-group input, .form-group select { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--gray-border); box-sizing: border-box;}
@@ -43,6 +67,13 @@
             <a href="materials.html">Malzemeler</a>
             <a href="airfoil.html" class="active">Airfoil Analizi</a>
         </nav>
+
+        <div class="sidebar-divider"></div>
+
+        <h3>Proje</h3>
+        <button id="save-button" class="sidebar-btn save">Projeyi Kaydet</button>
+        <button id="load-button" class="sidebar-btn load">Projeyi Yükle</button>
+        <button id="clear-button" class="sidebar-btn clear">Verileri Temizle</button>
     </div>
 
     <div class="main-content">
@@ -246,6 +277,77 @@
                 };
             }
             currentChart = new Chart(ctx, chartConfig);
+        }
+
+        // --- PROJECT SAVE/LOAD LOGIC ---
+        document.getElementById('save-button').addEventListener('click', saveProjectData);
+        document.getElementById('load-button').addEventListener('click', loadProjectData);
+        document.getElementById('clear-button').addEventListener('click', clearProjectData);
+
+        function clearProjectData() {
+            if (confirm('Kaydedilmiş tüm proje verilerini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
+                localStorage.removeItem('uavProjectData');
+                alert('Proje verileri başarıyla silindi.');
+                location.reload();
+            }
+        }
+
+        function loadProjectData() {
+            const projectDataString = localStorage.getItem('uavProjectData');
+            if (!projectDataString) {
+                alert('Kaydedilmiş proje verisi bulunamadı.');
+                return;
+            }
+
+            try {
+                const projectData = JSON.parse(projectDataString);
+                if (projectData.airfoil) {
+                    if(projectData.airfoil.selectedAirfoil) {
+                        document.getElementById('airfoil-select').value = projectData.airfoil.selectedAirfoil;
+                    }
+                    if(projectData.airfoil.selectedReynolds) {
+                        document.getElementById('reynolds-select').value = projectData.airfoil.selectedReynolds;
+                    }
+
+                    // Değişikliğin UI'da yansıtılması için güncelleme fonksiyonunu tetikle
+                    updateAnalysis();
+
+                    alert('Proje başarıyla yüklendi!');
+                } else {
+                    alert('Bu sayfa için kaydedilmiş airfoil verisi bulunamadı.');
+                }
+            } catch (e) {
+                console.error("Proje yüklenirken hata oluştu:", e);
+                alert('Proje yüklenirken bir hata oluştu. Lütfen konsolu kontrol edin.');
+            }
+        }
+
+        function saveProjectData() {
+            // Mevcut proje verilerini yüklemeyi dene, yoksa yeni bir nesne oluştur
+            let projectData = {};
+            try {
+                const existingData = localStorage.getItem('uavProjectData');
+                if (existingData) {
+                    projectData = JSON.parse(existingData);
+                }
+            } catch (e) {
+                console.error("Mevcut proje verileri okunurken hata oluştu:", e);
+                projectData = {}; // Hata durumunda sıfırla
+            }
+
+            // Airfoil seçimlerini kaydet
+            projectData.airfoil = {
+                selectedAirfoil: document.getElementById('airfoil-select').value,
+                selectedReynolds: document.getElementById('reynolds-select').value
+            };
+
+            try {
+                localStorage.setItem('uavProjectData', JSON.stringify(projectData));
+                alert('Proje başarıyla kaydedildi!');
+            } catch (e) {
+                console.error("Projeyi kaydederken hata oluştu:", e);
+                alert('Proje kaydedilirken bir hata oluştu. Lütfen konsolu kontrol edin.');
+            }
         }
     </script>
 </body>
