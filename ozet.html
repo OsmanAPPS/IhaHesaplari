@@ -9,33 +9,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Performans Özeti - İHA Tasarım Aracı</title>
+    <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --primary-color: #007bff;
-            --light-gray: #f8f9fa;
-            --gray-border: #dee2e6;
-            --text-dark: #343a40;
-            --text-light: #6c757d;
-        }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; margin: 0; background-color: var(--light-gray); }
-        .sidebar { width: 280px; background: #ffffff; border-right: 1px solid var(--gray-border); padding: 20px; height: 100vh; position: fixed; overflow-y: auto; }
-        .main-content { margin-left: 300px; flex-grow: 1; padding: 30px; }
-        .summary-section { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); margin-bottom: 30px; }
-        .summary-section h3 { color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; margin-top: 0; }
-        .input-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-        .form-group { display: flex; flex-direction: column; }
-        .form-group label { margin-bottom: 5px; color: var(--text-light); }
-        .form-group input { width: 100%; padding: 8px; border: 1px solid var(--gray-border); border-radius: 4px; box-sizing: border-box; }
-        .button-container { text-align: right; margin-top: 15px; }
-        button { padding: 10px 25px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
-        button:hover { background-color: #0056b3; }
-        .result-box { margin-top: 20px; padding: 15px; background: #e9f7ef; border-left: 5px solid #28a745; font-size: 1.1rem; }
-        .sidebar-nav a { display: block; padding: 10px; color: var(--text-dark); text-decoration: none; border-radius: 5px; margin-bottom: 5px; }
-        .sidebar-nav a:hover, .sidebar-nav a.active { background-color: var(--primary-color); color: #fff; }
-        h1 { color: var(--text-dark); }
-        .sidebar-section { margin-top: 25px; border-top: 1px solid var(--gray-border); padding-top: 15px; }
-    </style>
 </head>
 <body>
 
@@ -49,6 +24,16 @@
             <a href="airfoil.html">Airfoil Analizi</a>
             <a href="ozet.html" class="active">Performans Özeti</a>
         </nav>
+        <div class="sidebar-section">
+            <h3>Ayarlar</h3>
+            <div class="theme-switcher">
+                <label for="theme-switch">Karanlık Mod</label>
+                <label class="switch">
+                    <input type="checkbox" id="theme-switch">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
         <div class="sidebar-section">
             <h3>Proje Yönetimi</h3>
             <button id="clear-button" class="sidebar-button clear">Proje Verilerini Temizle</button>
@@ -98,6 +83,10 @@
                     <label for="param_mac">Ort. Aerodinamik Veter (MAC - mm)</label>
                     <input type="number" id="param_mac" value="340">
                 </div>
+                 <div class="form-group">
+                    <label for="param_mac_le">MAC Başlangıç Noktası (mm, burundan)</label>
+                    <input type="number" id="param_mac_le" value="480">
+                </div>
 
                 <!-- Aerodinamik -->
                 <div class="form-group">
@@ -134,6 +123,57 @@
                     <label for="param_tail_efficiency">Kuyruk Verimliliği (ηt)</label>
                     <input type="number" id="param_tail_efficiency" value="0.9" step="0.01">
                 </div>
+                <!-- V-n Diagram Params -->
+                 <div class="form-group">
+                    <label for="param_n_limit_pos">Limit Yük Faktörü (+n)</label>
+                    <input type="number" id="param_n_limit_pos" value="4.4">
+                </div>
+                 <div class="form-group">
+                    <label for="param_n_limit_neg">Limit Yük Faktörü (-n)</label>
+                    <input type="number" id="param_n_limit_neg" value="-2.2">
+                </div>
+                 <div class="form-group">
+                    <label for="param_cl_min">Negatif Maks. Kaldırma K. (CLmin)</label>
+                    <input type="number" id="param_cl_min" value="-0.8">
+                </div>
+                 <div class="form-group">
+                    <label for="param_v_max">Maksimum Hız (Vmax, m/s)</label>
+                    <input type="number" id="param_v_max" value="80">
+                </div>
+            </div>
+        </div>
+
+        <div class="summary-section">
+            <h3>Güç Sistemi Analizi</h3>
+            <div class="input-grid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
+                <div class="form-group">
+                    <label for="param_motor_kv">Motor kV Değeri (RPM/V)</label>
+                    <input type="number" id="param_motor_kv" value="1000">
+                </div>
+                <div class="form-group">
+                    <label for="param_battery_cells">Batarya Hücre Sayısı (S)</label>
+                    <input type="number" id="param_battery_cells" value="4">
+                </div>
+                <div class="form-group">
+                    <label for="param_prop_diameter">Pervane Çapı (inç)</label>
+                    <input type="number" id="param_prop_diameter" value="10">
+                </div>
+                <div class="form-group">
+                    <label for="param_prop_pitch">Pervane Hatvesi (inç)</label>
+                    <input type="number" id="param_prop_pitch" value="4.5">
+                </div>
+                <div class="form-group">
+                    <label for="param_static_current">Statik İtki Akımı (A)</label>
+                    <input type="number" id="param_static_current" value="25" step="any">
+                </div>
+                <div class="form-group">
+                    <label for="param_battery_capacity">Batarya Kapasitesi (mAh)</label>
+                    <input type="number" id="param_battery_capacity" value="5200">
+                </div>
+                <div class="form-group">
+                    <label for="param_cruise_current">Ortalama Seyir Akımı (A)</label>
+                    <input type="number" id="param_cruise_current" value="15" step="any">
+                </div>
             </div>
         </div>
 
@@ -144,10 +184,55 @@
             </div>
         </div>
 
+        <div class="summary-section">
+            <h3>İleri Seviye Stabilite Sonuçları</h3>
+            <div class="input-grid" id="stability-results-grid">
+                <!-- Stabilite sonuçları buraya eklenecek -->
+            </div>
+        </div>
+
+        <div class="summary-section">
+            <h3>Uçuş Zarfı (V-n Diyagramı)</h3>
+            <div class="button-container" style="text-align: center; margin-bottom: 20px;">
+                <button id="plot-vn-button">V-n Diyagramını Çiz</button>
+            </div>
+            <canvas id="vnChart"></canvas>
+        </div>
+
     </div>
 
     <script>
+    // --- UNIFIED DOMContentLoaded LOGIC ---
     document.addEventListener('DOMContentLoaded', () => {
+        // --- THEME SWITCHER LOGIC ---
+        const themeSwitch = document.getElementById('theme-switch');
+        const currentTheme = localStorage.getItem('theme');
+
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                document.body.classList.add('dark-mode');
+                themeSwitch.checked = true;
+            } else {
+                document.body.classList.remove('dark-mode');
+                themeSwitch.checked = false;
+            }
+        }
+
+        if (currentTheme) {
+            applyTheme(currentTheme);
+        }
+
+        themeSwitch.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                localStorage.setItem('theme', 'dark');
+                applyTheme('dark');
+            } else {
+                localStorage.setItem('theme', 'light');
+                applyTheme('light');
+            }
+        });
+
+        // --- PAGE-SPECIFIC LOGIC ---
         loadProjectData();
         document.querySelector('.main-content').addEventListener('input', (e) => {
             if (e.target.tagName === 'INPUT') {
@@ -155,6 +240,7 @@
                 saveProjectData();
             }
         });
+        document.getElementById('plot-vn-button').addEventListener('click', plotVnDiagram);
         runAllCalculations();
     });
 
@@ -162,7 +248,10 @@
         const ids = [
             'param_total_mass', 'param_oew', 'param_cg', 'param_wing_area', 'param_wingspan',
             'param_root_chord', 'param_tip_chord', 'param_mac', 'param_rho', 'param_cl_max',
-            'param_cd0', 'param_e', 'param_ac_wing', 'param_tail_area', 'param_tail_arm', 'param_tail_efficiency'
+            'param_cd0', 'param_e', 'param_ac_wing', 'param_tail_area', 'param_tail_arm', 'param_tail_efficiency',
+            'param_motor_kv', 'param_battery_cells', 'param_prop_diameter', 'param_prop_pitch',
+            'param_static_current', 'param_battery_capacity', 'param_cruise_current', 'param_mac_le',
+            'param_n_limit_pos', 'param_n_limit_neg', 'param_cl_min', 'param_v_max'
         ];
         const params = {};
         ids.forEach(id => {
@@ -173,24 +262,25 @@
 
     function runAllCalculations() {
         const p = getParams();
-        const results = {};
+        const perfResults = {};
+        const stabilityResults = {};
 
         // Aspect Ratio
         if (p.wing_area > 0) {
-            results['Aspect Ratio'] = `${(p.wingspan ** 2 / p.wing_area).toFixed(2)}`;
+            perfResults['Aspect Ratio'] = `${(p.wingspan ** 2 / p.wing_area).toFixed(2)}`;
         }
         // Taper Ratio
         if (p.root_chord > 0) {
-            results['Taper Ratio'] = `${(p.tip_chord / p.root_chord).toFixed(3)}`;
+            perfResults['Taper Ratio'] = `${(p.tip_chord / p.root_chord).toFixed(3)}`;
         }
         // Faydalı Yük
-        results['Faydalı Yük'] = `${(p.total_mass - p.oew).toFixed(2)} kg`;
+        perfResults['Faydalı Yük'] = `${(p.total_mass - p.oew).toFixed(2)} kg`;
 
         // Stall Hızı
         if (p.rho > 0 && p.wing_area > 0 && p.cl_max > 0) {
             const W = p.total_mass * 9.81;
             const Vs = Math.sqrt((2 * W) / (p.rho * p.wing_area * p.cl_max));
-            results['Stall Hızı'] = `${Vs.toFixed(2)} m/s`;
+            perfResults['Stall Hızı'] = `${Vs.toFixed(2)} m/s`;
         }
 
         // L/D Oranı ve Seyir Hızı
@@ -198,30 +288,140 @@
         if (p.cd0 > 0 && p.e > 0 && AR > 0) {
             const k = 1 / (Math.PI * p.e * AR);
             const ld_max = 1 / (2 * Math.sqrt(p.cd0 * k));
-            results['Maksimum Cl/Cd'] = `${ld_max.toFixed(2)}`;
+            perfResults['Maksimum Cl/Cd'] = `${ld_max.toFixed(2)}`;
 
             const CL_best_LD = Math.sqrt(p.cd0 / k);
             if (p.rho > 0 && p.wing_area > 0 && CL_best_LD > 0) {
                  const W = p.total_mass * 9.81;
                  const V_cruise = Math.sqrt((2 * W) / (p.rho * p.wing_area * CL_best_LD));
-                 results['Seyir Hızı'] = `${V_cruise.toFixed(2)} m/s`;
+                 perfResults['Seyir Hızı'] = `${V_cruise.toFixed(2)} m/s`;
             }
         }
 
-        // Statik Marjin
-        if (p.mac > 0 && p.wing_area > 0) {
-            const ac_w = (p.ac_wing / 100) * p.mac; // in mm
-            // Unit consistency note: tail_arm (m) is converted to mm. S_t/S_w is unitless. ac_w, mac, cg are in mm.
-            const np = ac_w + (p.tail_efficiency * (p.tail_area / p.wing_area) * (p.tail_arm * 1000));
-            const staticMargin = ((np - p.cg) / p.mac) * 100;
-            results['Statik Marjin'] = `% ${staticMargin.toFixed(1)}`;
+        // Stabilite Hesaplamaları
+        if (p.mac > 0 && p.wing_area > 0 && p.mac_le > 0) {
+            const ac_w_relative = (p.ac_wing / 100) * p.mac; // Kanat AC'nin MAC üzerindeki konumu (mm)
+            const ac_w_absolute = p.mac_le + ac_w_relative; // Kanat AC'nin burundan mesafesi (mm)
+
+            // Kuyruk katkısını hesaba katarak Nötr Noktanın (NP) mutlak konumunu hesapla
+            const np_absolute = ac_w_absolute + (p.tail_efficiency * (p.tail_area / p.wing_area) * (p.tail_arm * 1000));
+
+            stabilityResults['Nötr Nokta (NP)'] = `${np_absolute.toFixed(1)} mm (burundan)`;
+
+            const staticMargin = ((np_absolute - p.cg) / p.mac) * 100;
+            perfResults['Statik Marjin'] = `% ${staticMargin.toFixed(1)}`;
+
+            // Tavsiye edilen CG zarfını hesapla (%5 - %15 SM aralığı)
+            const cg_forward_limit = np_absolute - (0.15 * p.mac); // %15 SM (daha stabil)
+            const cg_rear_limit = np_absolute - (0.05 * p.mac); // %5 SM (daha manevra kabiliyeti yüksek)
+
+            stabilityResults['CG İleri Limit (%15 SM)'] = `${cg_forward_limit.toFixed(1)} mm`;
+            stabilityResults['CG Geri Limit (%5 SM)'] = `${cg_rear_limit.toFixed(1)} mm`;
         }
 
-        displayResults(results);
+        // Güç Sistemi Hesaplamaları
+        if (p.prop_diameter > 0 && p.prop_pitch > 0 && p.motor_kv > 0 && p.battery_cells > 0) {
+            const voltage = p.battery_cells * 3.7; // Nominal voltage
+            const power = voltage * p.static_current;
+            const static_thrust_grams = 2 * power;
+            perfResults['Tahmini Statik İtki'] = `${(static_thrust_grams / 1000).toFixed(2)} kg`;
+            perfResults['İtki/Ağırlık Oranı'] = `${(static_thrust_grams / (p.total_mass * 1000)).toFixed(2)}`;
+        }
+
+        if (p.battery_capacity > 0 && p.cruise_current > 0) {
+            const flight_time_minutes = (p.battery_capacity / 1000 / p.cruise_current) * 60 * 0.8;
+            perfResults['Tahmini Uçuş Süresi'] = `${flight_time_minutes.toFixed(1)} dakika`;
+        }
+
+        displayResultsInGrid(perfResults, 'results-grid');
+        displayResultsInGrid(stabilityResults, 'stability-results-grid');
     }
 
-    function displayResults(results) {
-        const grid = document.getElementById('results-grid');
+    let vnChartInstance;
+    function plotVnDiagram() {
+        const p = getParams();
+        const W = p.total_mass * 9.81;
+
+        if (p.rho <= 0 || p.wing_area <= 0 || p.cl_max <= 0 || p.v_max <= 0) {
+            alert("V-n diyagramı için lütfen geçerli uçak parametreleri girin (Hava Yoğunluğu, Kanat Alanı, CLmax, Vmax).");
+            return;
+        }
+
+        const Vs1g = Math.sqrt((2 * W) / (p.rho * p.wing_area * p.cl_max)); // 1g stall speed
+        const Va = Vs1g * Math.sqrt(p.n_limit_pos); // Maneuvering speed
+        const Vd = p.v_max; // Dive speed / Max speed
+
+        // Aerodynamic Stall Limit (Positive)
+        const stall_speeds_pos = Array.from({length: 101}, (_, i) => Vs1g * Math.sqrt(i / 50)); // from n=0 to n=2
+        const n_values_pos = stall_speeds_pos.map(v => (0.5 * p.rho * v*v * p.wing_area * p.cl_max) / W);
+
+        const aerodynamic_limit_pos = [];
+        for(let i=0; i<stall_speeds_pos.length; i++) {
+            if (n_values_pos[i] <= p.n_limit_pos && stall_speeds_pos[i] <= Va) {
+                aerodynamic_limit_pos.push({x: stall_speeds_pos[i], y: n_values_pos[i]});
+            }
+        }
+        aerodynamic_limit_pos.push({x: Va, y: p.n_limit_pos});
+
+
+        // Aerodynamic Stall Limit (Negative)
+        const stall_speeds_neg = Array.from({length: 51}, (_, i) => Vs1g * Math.sqrt(i / 25));
+        const n_values_neg = stall_speeds_neg.map(v => (0.5 * p.rho * v*v * p.wing_area * p.cl_min) / W);
+
+        const aerodynamic_limit_neg = [];
+         for(let i=0; i<stall_speeds_neg.length; i++) {
+            if (n_values_neg[i] >= p.n_limit_neg && stall_speeds_neg[i] <= Vd) {
+                 aerodynamic_limit_neg.push({x: stall_speeds_neg[i], y: n_values_neg[i]});
+            }
+        }
+
+        const vn_envelope_data = [
+            ...aerodynamic_limit_pos,
+            {x: Vd, y: p.n_limit_pos},
+            {x: Vd, y: 0},
+            {x: Vd, y: p.n_limit_neg},
+            ...aerodynamic_limit_neg.sort((a,b) => b.x - a.x),
+            {x: 0, y: 0},
+            aerodynamic_limit_pos[0]
+        ];
+
+        const ctx = document.getElementById('vnChart').getContext('2d');
+        if (vnChartInstance) {
+            vnChartInstance.destroy();
+        }
+        vnChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'Uçuş Zarfı',
+                    data: vn_envelope_data,
+                    borderColor: 'red',
+                    backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        title: { display: true, text: 'Hız (m/s)' }
+                    },
+                    y: {
+                        title: { display: true, text: 'Yük Faktörü (n)' }
+                    }
+                },
+                plugins: {
+                    title: { display: true, text: 'V-n Diyagramı' }
+                }
+            }
+        });
+    }
+
+    function displayResultsInGrid(results, gridId) {
+        const grid = document.getElementById(gridId);
         grid.innerHTML = '';
         for (const [key, value] of Object.entries(results)) {
             const box = document.createElement('div');

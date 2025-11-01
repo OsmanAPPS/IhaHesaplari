@@ -5,10 +5,10 @@
     <!-- Authentication Check -->
     <script src="js/auth.js"></script>
     <script>checkAuth();</script>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Geometri Görselleştirici - İHA Tasarım Aracı</title>
+    <link rel="stylesheet" href="css/style.css">
     <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
     <script type="importmap">
     {
@@ -18,42 +18,6 @@
         }
     }
     </script>
-    <style>
-        :root {
-            --primary-color: #0d6efd;
-            --light-gray: #f8f9fa;
-            --gray-border: #dee2e6;
-            --text-dark: #212529;
-            --text-light: #6c757d;
-        }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; margin: 0; background-color: var(--light-gray); }
-        .sidebar { width: 250px; background: #ffffff; border-right: 1px solid var(--gray-border); padding: 20px; height: 100vh; position: fixed; overflow-y: auto; }
-        .main-content { margin-left: 270px; flex-grow: 1; padding: 20px; }
-        .container { display: flex; gap: 30px; }
-        .input-panel { flex: 1; }
-        .drawing-panel { flex: 2; }
-        .input-section { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .input-section h4 { margin-top: 0; border-bottom: 1px solid var(--gray-border); padding-bottom: 10px; }
-        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .form-group { display: flex; flex-direction: column; }
-        label { margin-bottom: 5px; font-size: 0.9rem; color: var(--text-light); }
-        input { padding: 8px; border: 1px solid var(--gray-border); border-radius: 4px; }
-        canvas { border: 1px solid var(--gray-border); background: #fff; }
-        .sidebar-nav a { display: block; padding: 10px; color: var(--text-dark); text-decoration: none; border-radius: 5px; margin-bottom: 5px; }
-        .sidebar-nav a:hover, .sidebar-nav a.active { background-color: var(--primary-color); color: #fff; }
-        h1, h3 { color: var(--text-dark); }
-        .sidebar-section { margin-top: 25px; border-top: 1px solid var(--gray-border); padding-top: 15px; }
-        .sidebar-section h3 { margin-bottom: 10px; }
-        .sidebar-button {
-            display: block; width: 100%; padding: 10px; margin-bottom: 8px;
-            border: 1px solid var(--gray-border); border-radius: 5px;
-            background-color: var(--light-gray); text-align: left; font-size: 1em; cursor: pointer;
-        }
-        .sidebar-button:hover { background-color: #e2e6ea; }
-        .sidebar-button.save { background-color: #d1ecf1; border-color: #bee5eb; }
-        .sidebar-button.load { background-color: #d4edda; border-color: #c3e6cb; }
-        .sidebar-button.clear { background-color: #f8d7da; border-color: #f5c6cb; }
-    </style>
 </head>
 <body>
 
@@ -67,6 +31,16 @@
             <a href="airfoil.html">Airfoil Analizi</a>
             <a href="ozet.html">Performans Özeti</a>
         </nav>
+        <div class="sidebar-section">
+            <h3>Ayarlar</h3>
+            <div class="theme-switcher">
+                <label for="theme-switch">Karanlık Mod</label>
+                <label class="switch">
+                    <input type="checkbox" id="theme-switch">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
         <div class="sidebar-section">
             <h3>Proje Yönetimi</h3>
             <button id="clear-button" class="sidebar-button clear">Proje Verilerini Temizle</button>
@@ -96,8 +70,15 @@
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        // --- 3D SETUP ---
+        // --- GLOBAL SCOPE FOR 3D and 2D ---
         let scene, camera, renderer, controls, aircraftGroup;
+
+        // updateAllVisuals must be in the global module scope to be accessible
+        window.updateAllVisuals = function() {
+            const currentParams = getParams();
+            drawAircraft(currentParams);
+            updateAircraftModel(currentParams);
+        }
 
         function init3D() {
             scene = new THREE.Scene();
@@ -129,33 +110,30 @@
 
             const material = new THREE.MeshStandardMaterial({ color: 0x95a5a6, side: THREE.DoubleSide });
 
-            // Fuselage (X=length, Y=span, Z=up)
             const fuselageGeom = new THREE.CylinderGeometry(params.fuselage.diameter / 2, params.fuselage.tailDiameter / 2, params.fuselage.length, 32);
             const fuselageMesh = new THREE.Mesh(fuselageGeom, material);
-            fuselageMesh.rotation.z = Math.PI / 2; // Align cylinder with X axis
+            fuselageMesh.rotation.z = Math.PI / 2;
             fuselageMesh.position.x = params.fuselage.length / 2;
             aircraftGroup.add(fuselageMesh);
 
-            // --- Wings ---
             const wingGroup = new THREE.Group();
             const wingShape = createWingShape(params.wing.rootChord, params.wing.tipChord, params.wing.span / 2 - params.fuselage.diameter / 2, params.wing.sweep);
             const wingExtrudeSettings = { depth: params.wing.thickness / 100 * params.wing.rootChord, bevelEnabled: false };
             const wingGeom = new THREE.ExtrudeGeometry(wingShape, wingExtrudeSettings);
-            wingGeom.rotateX(Math.PI / 2); // Orient flat wing to be horizontal
+            wingGeom.rotateX(Math.PI / 2);
 
             const rightWing = new THREE.Mesh(wingGeom, material);
             rightWing.position.y = params.fuselage.diameter / 2;
 
             const leftWing = new THREE.Mesh(wingGeom.clone(), material);
-            leftWing.scale.y = -1; // Mirror geometry for the left side
+            leftWing.scale.y = -1;
             leftWing.position.y = -params.fuselage.diameter / 2;
 
             wingGroup.add(rightWing, leftWing);
             wingGroup.position.x = params.wing.position;
-            wingGroup.rotation.x = (params.wing.dihedral * Math.PI / 180); // Apply dihedral to the whole group
+            wingGroup.rotation.x = (params.wing.dihedral * Math.PI / 180);
             aircraftGroup.add(wingGroup);
 
-            // --- Horizontal Stabilizer ---
             const hsGroup = new THREE.Group();
             const hsShape = createWingShape(params.horizontalStab.rootChord, params.horizontalStab.tipChord, params.horizontalStab.span / 2 - params.fuselage.tailDiameter / 2, params.horizontalStab.sweep);
             const hsExtrudeSettings = { depth: params.horizontalStab.thickness / 100 * params.horizontalStab.rootChord, bevelEnabled: false };
@@ -173,7 +151,6 @@
             hsGroup.position.x = params.horizontalStab.position;
             aircraftGroup.add(hsGroup);
 
-            // --- Vertical Stabilizer ---
             const vsShape = createWingShape(params.verticalStab.rootChord, params.verticalStab.tipChord, params.verticalStab.height, params.verticalStab.sweep);
             const vsExtrudeSettings = { depth: params.verticalStab.thickness / 100 * params.verticalStab.rootChord, bevelEnabled: false };
             const vsGeom = new THREE.ExtrudeGeometry(vsShape, vsExtrudeSettings);
@@ -193,42 +170,6 @@
             shape.lineTo(sweepOffset, length);
             shape.closePath();
             return shape;
-        }
-
-        // --- 2D and 3D MAIN SCRIPT ---
-        document.addEventListener('DOMContentLoaded', () => {
-            init3D();
-
-            const params = {
-                fuselage: { length: 1200, noseLength: 250, tailLength: 450, diameter: 150, tailDiameter: 50 },
-                wing: { span: 1800, rootChord: 250, tipChord: 180, sweep: 10, dihedral: 5, thickness: 12, position: 500 },
-                horizontalStab: { span: 600, rootChord: 150, tipChord: 100, sweep: 15, thickness: 9, position: 1050 },
-                verticalStab: { height: 300, rootChord: 200, tipChord: 120, sweep: 25, thickness: 9, position: 1000 }
-            };
-
-            const panel = document.getElementById('input-panel');
-            const sections = { 'Gövde': 'fuselage', 'Ana Kanat': 'wing', 'Yatay Stabilizatör': 'horizontalStab', 'Dikey Stabilizatör': 'verticalStab' };
-
-            for (const [title, key] of Object.entries(sections)) {
-                panel.innerHTML += createSection(title, params[key], key);
-            }
-
-            loadProjectData(); // Otomatik Yükleme
-
-            panel.addEventListener('input', (e) => {
-                if(e.target.tagName === 'INPUT') {
-                    updateAllVisuals();
-                    saveProjectData(); // Otomatik Kaydetme
-                }
-            });
-
-            updateAllVisuals();
-        });
-
-        function updateAllVisuals() {
-            const currentParams = getParams();
-            drawAircraft(currentParams); // Update 2D
-            updateAircraftModel(currentParams); // Update 3D
         }
 
         function getParams() {
@@ -291,11 +232,8 @@
             ctx.save();
             ctx.translate(view.x, view.y);
             const scale = view.width / Math.max(params.fuselage.length, params.wing.span);
-
-            // Scaled dimensions
             const f_len = params.fuselage.length * scale;
             const f_diam = params.fuselage.diameter * scale;
-            const f_tail_diam = params.fuselage.tailDiameter * scale;
             const w_span = params.wing.span * scale;
             const w_root = params.wing.rootChord * scale;
             const w_tip = params.wing.tipChord * scale;
@@ -305,22 +243,20 @@
             const hs_root = params.horizontalStab.rootChord * scale;
             const hs_tip = params.horizontalStab.tipChord * scale;
             const hs_pos = params.horizontalStab.position * scale;
-            const hs_sweep = Math.tan(params.horizontalStab.sweep * Math.PI / 180) * (hs_span / 2 - f_tail_diam / 2);
+            const hs_sweep = Math.tan(params.horizontalStab.sweep * Math.PI / 180) * (hs_span / 2 - params.fuselage.tailDiameter * scale);
 
             const centerY = view.height / 2;
-
-            // Fuselage
             ctx.strokeRect(0, centerY - f_diam / 2, f_len, f_diam);
 
-            // Wing
-            ctx.beginPath(); // Right Wing
+            ctx.beginPath();
             ctx.moveTo(w_pos, centerY - f_diam / 2);
             ctx.lineTo(w_pos + w_sweep, centerY - w_span / 2);
             ctx.lineTo(w_pos + w_sweep + w_tip, centerY - w_span / 2);
             ctx.lineTo(w_pos + w_root, centerY - f_diam / 2);
             ctx.closePath();
             ctx.stroke();
-            ctx.beginPath(); // Left Wing
+
+            ctx.beginPath();
             ctx.moveTo(w_pos, centerY + f_diam / 2);
             ctx.lineTo(w_pos + w_sweep, centerY + w_span / 2);
             ctx.lineTo(w_pos + w_sweep + w_tip, centerY + w_span / 2);
@@ -328,25 +264,21 @@
             ctx.closePath();
             ctx.stroke();
 
-            // Horizontal Stab
-            ctx.beginPath(); // Right Stab
-            ctx.moveTo(hs_pos, centerY - f_tail_diam / 2);
+            ctx.beginPath();
+            ctx.moveTo(hs_pos, centerY - params.fuselage.tailDiameter * scale / 2);
             ctx.lineTo(hs_pos + hs_sweep, centerY - hs_span / 2);
             ctx.lineTo(hs_pos + hs_sweep + hs_tip, centerY - hs_span / 2);
-            ctx.lineTo(hs_pos + hs_root, centerY - f_tail_diam / 2);
-            ctx.closePath();
-            ctx.stroke();
-            ctx.beginPath(); // Left Stab
-            ctx.moveTo(hs_pos, centerY + f_tail_diam / 2);
-            ctx.lineTo(hs_pos + hs_sweep, centerY + hs_span/2);
-            ctx.lineTo(hs_pos + hs_sweep + hs_tip, centerY + hs_span/2);
-            ctx.lineTo(hs_pos + hs_root, centerY + f_tail_diam / 2);
+            ctx.lineTo(hs_pos + hs_root, centerY - params.fuselage.tailDiameter * scale / 2);
             ctx.closePath();
             ctx.stroke();
 
-            // Dimensions
-            drawDimension(ctx, 0, centerY + f_diam, f_len, centerY + f_diam, `Gövde Uzunluğu: ${params.fuselage.length} mm`);
-            drawDimension(ctx, w_pos + w_sweep, centerY - w_span/2 - 20, w_pos + w_sweep, centerY + w_span/2 + 20, `Kanat Açıklığı: ${params.wing.span} mm`);
+            ctx.beginPath();
+            ctx.moveTo(hs_pos, centerY + params.fuselage.tailDiameter * scale / 2);
+            ctx.lineTo(hs_pos + hs_sweep, centerY + hs_span/2);
+            ctx.lineTo(hs_pos + hs_sweep + hs_tip, centerY + hs_span/2);
+            ctx.lineTo(hs_pos + hs_root, centerY + params.fuselage.tailDiameter * scale / 2);
+            ctx.closePath();
+            ctx.stroke();
 
             ctx.restore();
         }
@@ -362,13 +294,8 @@
             const vs_tip = params.verticalStab.tipChord * scale;
             const vs_pos = params.verticalStab.position * scale;
             const vs_sweep = Math.tan(params.verticalStab.sweep * Math.PI / 180) * vs_h;
-
             const groundY = view.height - 30;
-
-            // Fuselage
             ctx.strokeRect(0, groundY - f_diam, f_len, f_diam);
-
-            // Vertical Stab
             ctx.beginPath();
             ctx.moveTo(vs_pos, groundY - f_diam);
             ctx.lineTo(vs_pos + vs_sweep, groundY - f_diam - vs_h);
@@ -376,10 +303,6 @@
             ctx.lineTo(vs_pos + vs_root, groundY - f_diam);
             ctx.closePath();
             ctx.stroke();
-
-            // Dimensions
-            drawDimension(ctx, vs_pos + vs_sweep + vs_tip, groundY - f_diam - vs_h - 10, vs_pos + vs_root, groundY - f_diam - vs_h - 10, `Dikey Stb. Yükseklik: ${params.verticalStab.height} mm`);
-
             ctx.restore();
         }
 
@@ -390,24 +313,18 @@
             const f_diam = params.fuselage.diameter * scale;
             const w_span = params.wing.span * scale;
             const w_dihedral = Math.tan(params.wing.dihedral * Math.PI / 180) * (w_span/2);
-
             const centerX = view.width / 2;
             const groundY = view.height - 30;
-
-            // Fuselage
             ctx.beginPath();
             ctx.arc(centerX, groundY - f_diam/2, f_diam/2, 0, 2 * Math.PI);
             ctx.stroke();
-
-            // Wing
             ctx.beginPath();
             ctx.moveTo(centerX - f_diam/2, groundY - f_diam/2);
             ctx.lineTo(centerX - w_span/2, groundY - f_diam/2 - w_dihedral);
-            ctx.lineTo(centerX - w_span/2, groundY - f_diam/2 - w_dihedral + 5); // Assuming some thickness
+            ctx.lineTo(centerX - w_span/2, groundY - f_diam/2 - w_dihedral + 5);
             ctx.lineTo(centerX - f_diam/2, groundY - f_diam/2 + 5);
             ctx.closePath();
             ctx.stroke();
-
             ctx.beginPath();
             ctx.moveTo(centerX + f_diam/2, groundY - f_diam/2);
             ctx.lineTo(centerX + w_span/2, groundY - f_diam/2 - w_dihedral);
@@ -415,10 +332,6 @@
             ctx.lineTo(centerX + f_diam/2, groundY - f_diam/2 + 5);
             ctx.closePath();
             ctx.stroke();
-
-            // Dimensions
-            drawDimension(ctx, centerX - w_span/2, groundY, centerX + w_span/2, groundY, `Kanat Açıklığı: ${params.wing.span} mm`);
-
             ctx.restore();
         }
 
@@ -440,6 +353,56 @@
             `;
         }
 
+        // This is the main entry point after the module is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            // Theme switcher logic
+            const themeSwitch = document.getElementById('theme-switch');
+            const currentTheme = localStorage.getItem('theme');
+            function applyTheme(theme) {
+                if (theme === 'dark') {
+                    document.body.classList.add('dark-mode');
+                    themeSwitch.checked = true;
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    themeSwitch.checked = false;
+                }
+            }
+            if (currentTheme) {
+                applyTheme(currentTheme);
+            }
+            themeSwitch.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    localStorage.setItem('theme', 'dark');
+                    applyTheme('dark');
+                } else {
+                    localStorage.setItem('theme', 'light');
+                    applyTheme('light');
+                }
+            });
+
+            // Page-specific logic
+            init3D();
+            const params = {
+                fuselage: { length: 1200, noseLength: 250, tailLength: 450, diameter: 150, tailDiameter: 50 },
+                wing: { span: 1800, rootChord: 250, tipChord: 180, sweep: 10, dihedral: 5, thickness: 12, position: 500 },
+                horizontalStab: { span: 600, rootChord: 150, tipChord: 100, sweep: 15, thickness: 9, position: 1050 },
+                verticalStab: { height: 300, rootChord: 200, tipChord: 120, sweep: 25, thickness: 9, position: 1000 }
+            };
+            const panel = document.getElementById('input-panel');
+            const sections = { 'Gövde': 'fuselage', 'Ana Kanat': 'wing', 'Yatay Stabilizatör': 'horizontalStab', 'Dikey Stabilizatör': 'verticalStab' };
+            for (const [title, key] of Object.entries(sections)) {
+                panel.innerHTML += createSection(title, params[key], key);
+            }
+            loadProjectData();
+            panel.addEventListener('input', (e) => {
+                if(e.target.tagName === 'INPUT') {
+                    window.updateAllVisuals();
+                    saveProjectData();
+                }
+            });
+            window.updateAllVisuals();
+        });
+
         // --- PROJECT SAVE/LOAD LOGIC ---
         document.getElementById('clear-button').addEventListener('click', clearProjectData);
 
@@ -453,11 +416,9 @@
         function loadProjectData() {
             const projectDataString = localStorage.getItem('uavProjectData');
             if (!projectDataString) return;
-
             try {
                 const projectData = JSON.parse(projectDataString);
                 if (!projectData.geometry) return;
-
                 const geometryData = projectData.geometry;
                 for (const section in geometryData) {
                     for (const param in geometryData[section]) {
@@ -467,7 +428,7 @@
                         }
                     }
                 }
-                updateAllVisuals();
+                window.updateAllVisuals();
             } catch (e) {
                 console.error("Proje yüklenirken hata oluştu:", e);
             }
@@ -481,19 +442,15 @@
                     projectData = JSON.parse(existingData);
                 }
             } catch (e) {
-                console.error("Mevcut proje verileri okunurken hata oluştu:", e);
                 projectData = {};
             }
-
             projectData.geometry = getParams();
-
             try {
                 localStorage.setItem('uavProjectData', JSON.stringify(projectData));
             } catch (e) {
                 console.error("Projeyi kaydederken hata oluştu:", e);
             }
         }
-
     </script>
 </body>
 </html>
