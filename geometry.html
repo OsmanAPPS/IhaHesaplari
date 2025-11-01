@@ -129,11 +129,12 @@
             leftWing.scale.y = -1;
             leftWing.position.y = -params.fuselage.diameter / 2;
 
+            const wingDihedral = params.wing.dihedral * Math.PI / 180;
+            rightWing.rotation.x = wingDihedral;
+            leftWing.rotation.x = -wingDihedral; // Mirrored wing needs opposite rotation for dihedral
             wingGroup.add(rightWing, leftWing);
             wingGroup.position.x = params.wing.position;
-            wingGroup.rotation.x = (params.wing.dihedral * Math.PI / 180);
             aircraftGroup.add(wingGroup);
-
             const hsGroup = new THREE.Group();
             const hsShape = createWingShape(params.horizontalStab.rootChord, params.horizontalStab.tipChord, params.horizontalStab.span / 2 - params.fuselage.tailDiameter / 2, params.horizontalStab.sweep);
             const hsExtrudeSettings = { depth: params.horizontalStab.thickness / 100 * params.horizontalStab.rootChord, bevelEnabled: false };
@@ -216,22 +217,72 @@
             drawFrontView(ctx, frontView, params);
         }
 
-        function drawDimension(ctx, x1, y1, x2, y2, label) {
+        function drawHorizontalDimension(ctx, x, y, length, label) {
+            const arrowSize = 5;
+            const extLineOffset = 10;
             ctx.save();
             ctx.strokeStyle = '#c0392b';
             ctx.fillStyle = '#c0392b';
+            ctx.lineWidth = 1;
+            ctx.font = '12px Arial';
             ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
+            ctx.moveTo(x, y - extLineOffset);
+            ctx.lineTo(x, y + extLineOffset);
+            ctx.moveTo(x + length, y - extLineOffset);
+            ctx.lineTo(x + length, y + extLineOffset);
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + length, y);
             ctx.stroke();
-            ctx.fillText(label, (x1 + x2) / 2, (y1 + y2) / 2 - 5);
+            ctx.beginPath();
+            ctx.moveTo(x + arrowSize, y - arrowSize / 2);
+            ctx.lineTo(x, y);
+            ctx.lineTo(x + arrowSize, y + arrowSize / 2);
+            ctx.moveTo(x + length - arrowSize, y - arrowSize / 2);
+            ctx.lineTo(x + length, y);
+            ctx.lineTo(x + length - arrowSize, y + arrowSize / 2);
+            ctx.stroke();
+            ctx.textAlign = 'center';
+            ctx.fillText(label, x + length / 2, y - 5);
+            ctx.restore();
+        }
+
+        function drawVerticalDimension(ctx, x, y, length, label) {
+            const arrowSize = 5;
+            const extLineOffset = 10;
+            ctx.save();
+            ctx.strokeStyle = '#c0392b';
+            ctx.fillStyle = '#c0392b';
+            ctx.lineWidth = 1;
+            ctx.font = '12px Arial';
+            ctx.beginPath();
+            ctx.moveTo(x - extLineOffset, y);
+            ctx.lineTo(x + extLineOffset, y);
+            ctx.moveTo(x - extLineOffset, y + length);
+            ctx.lineTo(x + extLineOffset, y + length);
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + length);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x - arrowSize / 2, y + arrowSize);
+            ctx.lineTo(x, y);
+            ctx.lineTo(x + arrowSize / 2, y + arrowSize);
+            ctx.moveTo(x - arrowSize / 2, y + length - arrowSize);
+            ctx.lineTo(x, y + length);
+            ctx.lineTo(x + arrowSize / 2, y + length - arrowSize);
+            ctx.stroke();
+            ctx.textAlign = 'center';
+            ctx.save();
+            ctx.translate(x - 15, y + length / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText(label, 0, 0);
+            ctx.restore();
             ctx.restore();
         }
 
         function drawTopView(ctx, view, params) {
             ctx.save();
             ctx.translate(view.x, view.y);
-            const scale = view.width / Math.max(params.fuselage.length, params.wing.span);
+            const scale = view.width / Math.max(params.fuselage.length * 1.05, params.wing.span * 1.05);
             const f_len = params.fuselage.length * scale;
             const f_diam = params.fuselage.diameter * scale;
             const w_span = params.wing.span * scale;
@@ -243,11 +294,9 @@
             const hs_root = params.horizontalStab.rootChord * scale;
             const hs_tip = params.horizontalStab.tipChord * scale;
             const hs_pos = params.horizontalStab.position * scale;
-            const hs_sweep = Math.tan(params.horizontalStab.sweep * Math.PI / 180) * (hs_span / 2 - params.fuselage.tailDiameter * scale);
-
+            const hs_sweep = Math.tan(params.horizontalStab.sweep * Math.PI / 180) * (hs_span / 2);
             const centerY = view.height / 2;
             ctx.strokeRect(0, centerY - f_diam / 2, f_len, f_diam);
-
             ctx.beginPath();
             ctx.moveTo(w_pos, centerY - f_diam / 2);
             ctx.lineTo(w_pos + w_sweep, centerY - w_span / 2);
@@ -255,7 +304,6 @@
             ctx.lineTo(w_pos + w_root, centerY - f_diam / 2);
             ctx.closePath();
             ctx.stroke();
-
             ctx.beginPath();
             ctx.moveTo(w_pos, centerY + f_diam / 2);
             ctx.lineTo(w_pos + w_sweep, centerY + w_span / 2);
@@ -263,7 +311,6 @@
             ctx.lineTo(w_pos + w_root, centerY + f_diam / 2);
             ctx.closePath();
             ctx.stroke();
-
             ctx.beginPath();
             ctx.moveTo(hs_pos, centerY - params.fuselage.tailDiameter * scale / 2);
             ctx.lineTo(hs_pos + hs_sweep, centerY - hs_span / 2);
@@ -271,7 +318,6 @@
             ctx.lineTo(hs_pos + hs_root, centerY - params.fuselage.tailDiameter * scale / 2);
             ctx.closePath();
             ctx.stroke();
-
             ctx.beginPath();
             ctx.moveTo(hs_pos, centerY + params.fuselage.tailDiameter * scale / 2);
             ctx.lineTo(hs_pos + hs_sweep, centerY + hs_span/2);
@@ -279,14 +325,16 @@
             ctx.lineTo(hs_pos + hs_root, centerY + params.fuselage.tailDiameter * scale / 2);
             ctx.closePath();
             ctx.stroke();
-
+            drawHorizontalDimension(ctx, 0, centerY + f_diam / 2 + 30, f_len, `${params.fuselage.length} mm`);
+            drawVerticalDimension(ctx, w_pos - 30, centerY - w_span / 2, w_span, `${params.wing.span} mm`);
+            drawHorizontalDimension(ctx, w_pos, centerY - w_span / 2 - 30, w_root, `${params.wing.rootChord} mm`);
             ctx.restore();
         }
 
         function drawSideView(ctx, view, params) {
             ctx.save();
             ctx.translate(view.x, view.y);
-            const scale = view.width / params.fuselage.length;
+            const scale = view.width / (params.fuselage.length * 1.05);
             const f_len = params.fuselage.length * scale;
             const f_diam = params.fuselage.diameter * scale;
             const vs_h = params.verticalStab.height * scale;
@@ -294,7 +342,7 @@
             const vs_tip = params.verticalStab.tipChord * scale;
             const vs_pos = params.verticalStab.position * scale;
             const vs_sweep = Math.tan(params.verticalStab.sweep * Math.PI / 180) * vs_h;
-            const groundY = view.height - 30;
+            const groundY = view.height / 2 + (f_diam + vs_h) / 2;
             ctx.strokeRect(0, groundY - f_diam, f_len, f_diam);
             ctx.beginPath();
             ctx.moveTo(vs_pos, groundY - f_diam);
@@ -303,35 +351,41 @@
             ctx.lineTo(vs_pos + vs_root, groundY - f_diam);
             ctx.closePath();
             ctx.stroke();
+            drawHorizontalDimension(ctx, 0, groundY + 20, f_len, `${params.fuselage.length} mm`);
+            drawVerticalDimension(ctx, vs_pos + vs_root + 30, groundY - f_diam - vs_h, vs_h, `${params.verticalStab.height} mm`);
             ctx.restore();
         }
 
         function drawFrontView(ctx, view, params) {
             ctx.save();
             ctx.translate(view.x, view.y);
-            const scale = view.width / params.wing.span;
+            const scale = view.width / (params.wing.span * 1.1);
             const f_diam = params.fuselage.diameter * scale;
             const w_span = params.wing.span * scale;
-            const w_dihedral = Math.tan(params.wing.dihedral * Math.PI / 180) * (w_span/2);
+            const w_dihedral_height = Math.tan(params.wing.dihedral * Math.PI / 180) * (w_span/2);
             const centerX = view.width / 2;
-            const groundY = view.height - 30;
+            const centerY = view.height / 2;
             ctx.beginPath();
-            ctx.arc(centerX, groundY - f_diam/2, f_diam/2, 0, 2 * Math.PI);
+            ctx.arc(centerX, centerY, f_diam/2, 0, 2 * Math.PI);
             ctx.stroke();
+            const wingRootY = centerY;
+            const wingTipY = centerY - w_dihedral_height;
             ctx.beginPath();
-            ctx.moveTo(centerX - f_diam/2, groundY - f_diam/2);
-            ctx.lineTo(centerX - w_span/2, groundY - f_diam/2 - w_dihedral);
-            ctx.lineTo(centerX - w_span/2, groundY - f_diam/2 - w_dihedral + 5);
-            ctx.lineTo(centerX - f_diam/2, groundY - f_diam/2 + 5);
+            ctx.moveTo(centerX - f_diam/2, wingRootY);
+            ctx.lineTo(centerX - w_span/2, wingTipY);
+            ctx.lineTo(centerX - w_span/2 + 5, wingTipY);
+            ctx.lineTo(centerX - f_diam/2, wingRootY + 2);
             ctx.closePath();
             ctx.stroke();
             ctx.beginPath();
-            ctx.moveTo(centerX + f_diam/2, groundY - f_diam/2);
-            ctx.lineTo(centerX + w_span/2, groundY - f_diam/2 - w_dihedral);
-            ctx.lineTo(centerX + w_span/2, groundY - f_diam/2 - w_dihedral + 5);
-            ctx.lineTo(centerX + f_diam/2, groundY - f_diam/2 + 5);
+            ctx.moveTo(centerX + f_diam/2, wingRootY);
+            ctx.lineTo(centerX + w_span/2, wingTipY);
+            ctx.lineTo(centerX + w_span/2 - 5, wingTipY);
+            ctx.lineTo(centerX + f_diam/2, wingRootY + 2);
             ctx.closePath();
             ctx.stroke();
+            drawHorizontalDimension(ctx, centerX - w_span / 2, centerY + f_diam / 2 + 30, w_span, `${params.wing.span} mm`);
+            drawVerticalDimension(ctx, centerX - w_span/2 - 30, wingTipY, w_dihedral_height, `${params.wing.dihedral}° Dihedral Rise`);
             ctx.restore();
         }
 
