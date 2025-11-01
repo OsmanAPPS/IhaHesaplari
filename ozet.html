@@ -56,147 +56,176 @@
         <h1>Performans Özeti</h1>
         <p>Bu sayfa, uçağınızın temel performans metriklerini hızlıca hesaplamak ve görüntülemek için kullanılır.</p>
 
-        <!-- Taper Ratio Calculator -->
         <div class="summary-section">
-            <h3>Taper Ratio (Sivrilme Oranı)</h3>
-            <div class="input-grid">
+            <h3>Genel Uçak Parametreleri</h3>
+            <div class="input-grid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
+                <!-- Ağırlık -->
                 <div class="form-group">
-                    <label for="taper_root_chord">Kanat Kökü Veteri (mm)</label>
-                    <input type="number" id="taper_root_chord" value="250">
+                    <label for="param_total_mass">Toplam Kalkış Kütlesi (kg)</label>
+                    <input type="number" id="param_total_mass" value="4.892" step="any">
                 </div>
                 <div class="form-group">
-                    <label for="taper_tip_chord">Kanat Ucu Veteri (mm)</label>
-                    <input type="number" id="taper_tip_chord" value="180">
+                    <label for="param_oew">Boş Ağırlık (kg)</label>
+                    <input type="number" id="param_oew" value="3.222" step="any">
+                </div>
+                 <div class="form-group">
+                    <label for="param_cg">Ağırlık Merkezi (CG - mm, burundan)</label>
+                    <input type="number" id="param_cg" value="550" step="any">
+                </div>
+
+                <!-- Geometri -->
+                <div class="form-group">
+                    <label for="param_wing_area">Kanat Alanı (m²)</label>
+                    <input type="number" id="param_wing_area" value="0.67" step="any">
+                </div>
+                <div class="form-group">
+                    <label for="param_wingspan">Kanat Açıklığı (m)</label>
+                    <input type="number" id="param_wingspan" value="2.0" step="any">
+                </div>
+                <div class="form-group">
+                    <label for="param_root_chord">Kanat Kökü Veteri (mm)</label>
+                    <input type="number" id="param_root_chord" value="450">
+                </div>
+                <div class="form-group">
+                    <label for="param_tip_chord">Kanat Ucu Veteri (mm)</label>
+                    <input type="number" id="param_tip_chord" value="220">
+                </div>
+                 <div class="form-group">
+                    <label for="param_mac">Ort. Aerodinamik Veter (MAC - mm)</label>
+                    <input type="number" id="param_mac" value="340">
+                </div>
+
+                <!-- Aerodinamik -->
+                <div class="form-group">
+                    <label for="param_rho">Hava Yoğunluğu (kg/m³)</label>
+                    <input type="number" id="param_rho" value="1.225" step="any">
+                </div>
+                <div class="form-group">
+                    <label for="param_cl_max">Maksimum Kaldırma Katsayısı (CLmax)</label>
+                    <input type="number" id="param_cl_max" value="1.4" step="any">
+                </div>
+                <div class="form-group">
+                    <label for="param_cd0">Sıfır Kaldırma Sürüklenme K. (CD0)</label>
+                    <input type="number" id="param_cd0" value="0.025" step="any">
+                </div>
+                 <div class="form-group">
+                    <label for="param_e">Oswald Verimlilik Faktörü (e)</label>
+                    <input type="number" id="param_e" value="0.8" step="any">
+                </div>
+
+                <!-- Stabilite Parametreleri -->
+                <div class="form-group">
+                    <label for="param_ac_wing">Kanat AC (%MAC)</label>
+                    <input type="number" id="param_ac_wing" value="25">
+                </div>
+                 <div class="form-group">
+                    <label for="param_tail_area">Kuyruk Alanı (m²)</label>
+                    <input type="number" id="param_tail_area" value="0.09" step="any">
+                </div>
+                 <div class="form-group">
+                    <label for="param_tail_arm">Kuyruk Kolu (m)</label>
+                    <input type="number" id="param_tail_arm" value="0.5" step="any">
+                </div>
+                <div class="form-group">
+                    <label for="param_tail_efficiency">Kuyruk Verimliliği (ηt)</label>
+                    <input type="number" id="param_tail_efficiency" value="0.9" step="0.01">
                 </div>
             </div>
-            <div class="result-box" id="taper_result" style="margin-top: 15px;">Sonuç: ...</div>
         </div>
 
-        <!-- Faydalı Yük Hesaplayıcı -->
         <div class="summary-section">
-            <h3>Faydalı Yük Hesaplayıcı</h3>
-            <div class="input-grid">
-                <div class="form-group">
-                    <label for="payload_mtow">Maksimum Kalkış Ağırlığı (kg)</label>
-                    <input type="number" id="payload_mtow" value="4.892" step="any">
-                </div>
-                <div class="form-group">
-                    <label for="payload_oew">Boş Ağırlık (kg)</label>
-                    <input type="number" id="payload_oew" value="3.222" step="any">
-                </div>
+            <h3>Hesaplanan Performans Özeti</h3>
+            <div class="input-grid" id="results-grid">
+                <!-- Sonuçlar buraya dinamik olarak eklenecek -->
             </div>
-            <div class="result-box" id="payload_result" style="margin-top: 15px;">Sonuç: ...</div>
-        </div>
-
-        <!-- Seyir Hızı Hesaplayıcı -->
-        <div class="summary-section">
-            <h3>Seyir Hızı (En Verimli Hız) Tahmini</h3>
-            <p>Bu hesaplayıcı, maksimum süzülme oranını (L/D max) sağlayan hızı tahmin eder.</p>
-            <div class="input-grid">
-                <div class="form-group">
-                    <label for="cruise_weight">Uçuş Ağırlığı (N)</label>
-                    <input type="number" id="cruise_weight" value="48" step="any">
-                </div>
-                <div class="form-group">
-                    <label for="cruise_rho">Hava Yoğunluğu (kg/m³)</label>
-                    <input type="number" id="cruise_rho" value="1.225" step="any">
-                </div>
-                <div class="form-group">
-                    <label for="cruise_area">Kanat Alanı (m²)</label>
-                    <input type="number" id="cruise_area" value="0.67" step="any">
-                </div>
-                <div class="form-group">
-                    <label for="cruise_cd0">Sıfır Kaldırma Sürüklenme Katsayısı (CD0)</label>
-                    <input type="number" id="cruise_cd0" value="0.025" step="any">
-                </div>
-                <div class="form-group">
-                    <label for="cruise_ar">Kanat Açıklık Oranı (AR)</label>
-                    <input type="number" id="cruise_ar" value="5.97" step="any">
-                </div>
-                <div class="form-group">
-                    <label for="cruise_e">Oswald Verimlilik Faktörü (e)</label>
-                    <input type="number" id="cruise_e" value="0.8" step="any">
-                </div>
-            </div>
-            <div class="result-box" id="cruise_result" style="margin-top: 15px;">Sonuç: ...</div>
         </div>
 
     </div>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // Otomatik Yükleme
         loadProjectData();
-
-        // Tüm girdiler için bir 'input' olay dinleyicisi ekleyerek hesaplamaları anında tetikle
         document.querySelector('.main-content').addEventListener('input', (e) => {
             if (e.target.tagName === 'INPUT') {
                 runAllCalculations();
                 saveProjectData();
             }
         });
-
-        // Sayfa yüklendiğinde ilk hesaplamaları çalıştır
         runAllCalculations();
     });
 
+    function getParams() {
+        const ids = [
+            'param_total_mass', 'param_oew', 'param_cg', 'param_wing_area', 'param_wingspan',
+            'param_root_chord', 'param_tip_chord', 'param_mac', 'param_rho', 'param_cl_max',
+            'param_cd0', 'param_e', 'param_ac_wing', 'param_tail_area', 'param_tail_arm', 'param_tail_efficiency'
+        ];
+        const params = {};
+        ids.forEach(id => {
+            params[id.replace('param_', '')] = parseFloat(document.getElementById(id).value) || 0;
+        });
+        return params;
+    }
+
     function runAllCalculations() {
-        calculateTaperRatio();
-        calculatePayload();
-        calculateCruiseSpeed();
-    }
+        const p = getParams();
+        const results = {};
 
-    function calculateTaperRatio() {
-        const rootChord = parseFloat(document.getElementById('taper_root_chord').value);
-        const tipChord = parseFloat(document.getElementById('taper_tip_chord').value);
-        const resultBox = document.getElementById('taper_result');
+        // Aspect Ratio
+        if (p.wing_area > 0) {
+            results['Aspect Ratio'] = `${(p.wingspan ** 2 / p.wing_area).toFixed(2)}`;
+        }
+        // Taper Ratio
+        if (p.root_chord > 0) {
+            results['Taper Ratio'] = `${(p.tip_chord / p.root_chord).toFixed(3)}`;
+        }
+        // Faydalı Yük
+        results['Faydalı Yük'] = `${(p.total_mass - p.oew).toFixed(2)} kg`;
 
-        if (isNaN(rootChord) || isNaN(tipChord) || rootChord <= 0) {
-            resultBox.innerHTML = 'Lütfen geçerli değerler girin.';
-            return;
+        // Stall Hızı
+        if (p.rho > 0 && p.wing_area > 0 && p.cl_max > 0) {
+            const W = p.total_mass * 9.81;
+            const Vs = Math.sqrt((2 * W) / (p.rho * p.wing_area * p.cl_max));
+            results['Stall Hızı'] = `${Vs.toFixed(2)} m/s`;
         }
 
-        const taperRatio = tipChord / rootChord;
-        resultBox.innerHTML = `Sivrilme Oranı: <strong>${taperRatio.toFixed(3)}</strong>`;
-    }
+        // L/D Oranı ve Seyir Hızı
+        const AR = p.wingspan ** 2 / p.wing_area;
+        if (p.cd0 > 0 && p.e > 0 && AR > 0) {
+            const k = 1 / (Math.PI * p.e * AR);
+            const ld_max = 1 / (2 * Math.sqrt(p.cd0 * k));
+            results['Maksimum Cl/Cd'] = `${ld_max.toFixed(2)}`;
 
-    function calculatePayload() {
-        const mtow = parseFloat(document.getElementById('payload_mtow').value);
-        const oew = parseFloat(document.getElementById('payload_oew').value);
-        const resultBox = document.getElementById('payload_result');
-
-        if (isNaN(mtow) || isNaN(oew)) {
-            resultBox.innerHTML = 'Lütfen geçerli değerler girin.';
-            return;
-        }
-        const payload = mtow - oew;
-        resultBox.innerHTML = `Faydalı Yük: <strong>${payload.toFixed(2)} kg</strong>`;
-    }
-
-    function calculateCruiseSpeed() {
-        const W = parseFloat(document.getElementById('cruise_weight').value);
-        const rho = parseFloat(document.getElementById('cruise_rho').value);
-        const S = parseFloat(document.getElementById('cruise_area').value);
-        const CD0 = parseFloat(document.getElementById('cruise_cd0').value);
-        const AR = parseFloat(document.getElementById('cruise_ar').value);
-        const e = parseFloat(document.getElementById('cruise_e').value);
-        const resultBox = document.getElementById('cruise_result');
-
-        if (isNaN(W) || isNaN(rho) || isNaN(S) || isNaN(CD0) || isNaN(AR) || isNaN(e) || S <= 0 || rho <= 0) {
-            resultBox.innerHTML = 'Lütfen tüm alanları geçerli değerlerle doldurun.';
-            return;
+            const CL_best_LD = Math.sqrt(p.cd0 / k);
+            if (p.rho > 0 && p.wing_area > 0 && CL_best_LD > 0) {
+                 const W = p.total_mass * 9.81;
+                 const V_cruise = Math.sqrt((2 * W) / (p.rho * p.wing_area * CL_best_LD));
+                 results['Seyir Hızı'] = `${V_cruise.toFixed(2)} m/s`;
+            }
         }
 
-        // En iyi L/D oranı için CL değeri
-        const k = 1 / (Math.PI * e * AR);
-        const CL_best_LD = Math.sqrt(CD0 / k);
+        // Statik Marjin
+        if (p.mac > 0 && p.wing_area > 0) {
+            const ac_w = (p.ac_wing / 100) * p.mac; // in mm
+            // Unit consistency note: tail_arm (m) is converted to mm. S_t/S_w is unitless. ac_w, mac, cg are in mm.
+            const np = ac_w + (p.tail_efficiency * (p.tail_area / p.wing_area) * (p.tail_arm * 1000));
+            const staticMargin = ((np - p.cg) / p.mac) * 100;
+            results['Statik Marjin'] = `% ${staticMargin.toFixed(1)}`;
+        }
 
-        // En iyi L/D oranını sağlayan hız
-        const V_best_LD = Math.sqrt((2 * W) / (rho * S * CL_best_LD));
-
-        resultBox.innerHTML = `Tahmini Seyir Hızı: <strong>${V_best_LD.toFixed(2)} m/s</strong>`;
+        displayResults(results);
     }
 
+    function displayResults(results) {
+        const grid = document.getElementById('results-grid');
+        grid.innerHTML = '';
+        for (const [key, value] of Object.entries(results)) {
+            const box = document.createElement('div');
+            box.className = 'result-box';
+            box.innerHTML = `${key}: <strong>${value}</strong>`;
+            grid.appendChild(box);
+        }
+    }
 
     // --- Proje Kaydetme/Yükleme Mantığı ---
     document.getElementById('clear-button').addEventListener('click', () => {
@@ -209,53 +238,32 @@
     function loadProjectData() {
         const projectDataString = localStorage.getItem('uavProjectData');
         if (!projectDataString) return;
-
         try {
             const projectData = JSON.parse(projectDataString);
-            if (!projectData.summary) return;
-
-            const summaryData = projectData.summary;
-            Object.keys(summaryData).forEach(id => {
+            if (!projectData.summary_v2) return;
+            Object.keys(projectData.summary_v2).forEach(id => {
                 const element = document.getElementById(id);
-                if (element) {
-                    element.value = summaryData[id];
-                }
+                if (element) element.value = projectData.summary_v2[id];
             });
-        } catch (e) {
-            console.error("Özet verileri yüklenirken hata oluştu:", e);
-        }
+        } catch (e) { console.error("Özet verileri yüklenirken hata oluştu:", e); }
     }
 
     function saveProjectData() {
         let projectData = {};
         try {
             const existingData = localStorage.getItem('uavProjectData');
-            if (existingData) {
-                projectData = JSON.parse(existingData);
-            }
-        } catch (e) {
-            projectData = {};
-        }
+            if (existingData) projectData = JSON.parse(existingData);
+        } catch (e) { projectData = {}; }
 
-        projectData.summary = {};
-        const inputIds = [
-            'taper_root_chord', 'taper_tip_chord',
-            'payload_mtow', 'payload_oew',
-            'cruise_weight', 'cruise_rho', 'cruise_area', 'cruise_cd0', 'cruise_ar', 'cruise_e'
-        ];
-
-        inputIds.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                projectData.summary[id] = element.value;
-            }
+        projectData.summary_v2 = {};
+        const inputElements = document.querySelectorAll('.summary-section .form-group input');
+        inputElements.forEach(el => {
+            projectData.summary_v2[el.id] = el.value;
         });
 
         try {
             localStorage.setItem('uavProjectData', JSON.stringify(projectData));
-        } catch (e) {
-            console.error("Projeyi kaydederken hata oluştu:", e);
-        }
+        } catch (e) { console.error("Projeyi kaydederken hata oluştu:", e); }
     }
     </script>
 </body>
