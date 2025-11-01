@@ -1,0 +1,262 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performans Özeti - İHA Tasarım Aracı</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --light-gray: #f8f9fa;
+            --gray-border: #dee2e6;
+            --text-dark: #343a40;
+            --text-light: #6c757d;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; margin: 0; background-color: var(--light-gray); }
+        .sidebar { width: 280px; background: #ffffff; border-right: 1px solid var(--gray-border); padding: 20px; height: 100vh; position: fixed; overflow-y: auto; }
+        .main-content { margin-left: 300px; flex-grow: 1; padding: 30px; }
+        .summary-section { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        .summary-section h3 { color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; margin-top: 0; }
+        .input-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { margin-bottom: 5px; color: var(--text-light); }
+        .form-group input { width: 100%; padding: 8px; border: 1px solid var(--gray-border); border-radius: 4px; box-sizing: border-box; }
+        .button-container { text-align: right; margin-top: 15px; }
+        button { padding: 10px 25px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+        button:hover { background-color: #0056b3; }
+        .result-box { margin-top: 20px; padding: 15px; background: #e9f7ef; border-left: 5px solid #28a745; font-size: 1.1rem; }
+        .sidebar-nav a { display: block; padding: 10px; color: var(--text-dark); text-decoration: none; border-radius: 5px; margin-bottom: 5px; }
+        .sidebar-nav a:hover, .sidebar-nav a.active { background-color: var(--primary-color); color: #fff; }
+        h1 { color: var(--text-dark); }
+        .sidebar-section { margin-top: 25px; border-top: 1px solid var(--gray-border); padding-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h3>Navigasyon</h3>
+        <nav class="sidebar-nav">
+            <a href="index.html">Hesaplayıcı</a>
+            <a href="geometry.html">Geometri Görselleştirici</a>
+            <a href="analysis.html">Analiz Paneli</a>
+            <a href="materials.html">Malzemeler</a>
+            <a href="airfoil.html">Airfoil Analizi</a>
+            <a href="ozet.html" class="active">Performans Özeti</a>
+        </nav>
+        <div class="sidebar-section">
+            <h3>Proje Yönetimi</h3>
+            <button id="clear-button" class="sidebar-button clear">Proje Verilerini Temizle</button>
+            <p style="font-size: 0.8rem; color: #6c757d; margin-top: 10px;">Tüm verileriniz sayfalar arasında otomatik olarak kaydedilir.</p>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <h1>Performans Özeti</h1>
+        <p>Bu sayfa, uçağınızın temel performans metriklerini hızlıca hesaplamak ve görüntülemek için kullanılır.</p>
+
+        <!-- Taper Ratio Calculator -->
+        <div class="summary-section">
+            <h3>Taper Ratio (Sivrilme Oranı)</h3>
+            <div class="input-grid">
+                <div class="form-group">
+                    <label for="taper_root_chord">Kanat Kökü Veteri (mm)</label>
+                    <input type="number" id="taper_root_chord" value="250">
+                </div>
+                <div class="form-group">
+                    <label for="taper_tip_chord">Kanat Ucu Veteri (mm)</label>
+                    <input type="number" id="taper_tip_chord" value="180">
+                </div>
+            </div>
+            <div class="result-box" id="taper_result" style="margin-top: 15px;">Sonuç: ...</div>
+        </div>
+
+        <!-- Faydalı Yük Hesaplayıcı -->
+        <div class="summary-section">
+            <h3>Faydalı Yük Hesaplayıcı</h3>
+            <div class="input-grid">
+                <div class="form-group">
+                    <label for="payload_mtow">Maksimum Kalkış Ağırlığı (kg)</label>
+                    <input type="number" id="payload_mtow" value="4.892" step="any">
+                </div>
+                <div class="form-group">
+                    <label for="payload_oew">Boş Ağırlık (kg)</label>
+                    <input type="number" id="payload_oew" value="3.222" step="any">
+                </div>
+            </div>
+            <div class="result-box" id="payload_result" style="margin-top: 15px;">Sonuç: ...</div>
+        </div>
+
+        <!-- Seyir Hızı Hesaplayıcı -->
+        <div class="summary-section">
+            <h3>Seyir Hızı (En Verimli Hız) Tahmini</h3>
+            <p>Bu hesaplayıcı, maksimum süzülme oranını (L/D max) sağlayan hızı tahmin eder.</p>
+            <div class="input-grid">
+                <div class="form-group">
+                    <label for="cruise_weight">Uçuş Ağırlığı (N)</label>
+                    <input type="number" id="cruise_weight" value="48" step="any">
+                </div>
+                <div class="form-group">
+                    <label for="cruise_rho">Hava Yoğunluğu (kg/m³)</label>
+                    <input type="number" id="cruise_rho" value="1.225" step="any">
+                </div>
+                <div class="form-group">
+                    <label for="cruise_area">Kanat Alanı (m²)</label>
+                    <input type="number" id="cruise_area" value="0.67" step="any">
+                </div>
+                <div class="form-group">
+                    <label for="cruise_cd0">Sıfır Kaldırma Sürüklenme Katsayısı (CD0)</label>
+                    <input type="number" id="cruise_cd0" value="0.025" step="any">
+                </div>
+                <div class="form-group">
+                    <label for="cruise_ar">Kanat Açıklık Oranı (AR)</label>
+                    <input type="number" id="cruise_ar" value="5.97" step="any">
+                </div>
+                <div class="form-group">
+                    <label for="cruise_e">Oswald Verimlilik Faktörü (e)</label>
+                    <input type="number" id="cruise_e" value="0.8" step="any">
+                </div>
+            </div>
+            <div class="result-box" id="cruise_result" style="margin-top: 15px;">Sonuç: ...</div>
+        </div>
+
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Otomatik Yükleme
+        loadProjectData();
+
+        // Tüm girdiler için bir 'input' olay dinleyicisi ekleyerek hesaplamaları anında tetikle
+        document.querySelector('.main-content').addEventListener('input', (e) => {
+            if (e.target.tagName === 'INPUT') {
+                runAllCalculations();
+                saveProjectData();
+            }
+        });
+
+        // Sayfa yüklendiğinde ilk hesaplamaları çalıştır
+        runAllCalculations();
+    });
+
+    function runAllCalculations() {
+        calculateTaperRatio();
+        calculatePayload();
+        calculateCruiseSpeed();
+    }
+
+    function calculateTaperRatio() {
+        const rootChord = parseFloat(document.getElementById('taper_root_chord').value);
+        const tipChord = parseFloat(document.getElementById('taper_tip_chord').value);
+        const resultBox = document.getElementById('taper_result');
+
+        if (isNaN(rootChord) || isNaN(tipChord) || rootChord <= 0) {
+            resultBox.innerHTML = 'Lütfen geçerli değerler girin.';
+            return;
+        }
+
+        const taperRatio = tipChord / rootChord;
+        resultBox.innerHTML = `Sivrilme Oranı: <strong>${taperRatio.toFixed(3)}</strong>`;
+    }
+
+    function calculatePayload() {
+        const mtow = parseFloat(document.getElementById('payload_mtow').value);
+        const oew = parseFloat(document.getElementById('payload_oew').value);
+        const resultBox = document.getElementById('payload_result');
+
+        if (isNaN(mtow) || isNaN(oew)) {
+            resultBox.innerHTML = 'Lütfen geçerli değerler girin.';
+            return;
+        }
+        const payload = mtow - oew;
+        resultBox.innerHTML = `Faydalı Yük: <strong>${payload.toFixed(2)} kg</strong>`;
+    }
+
+    function calculateCruiseSpeed() {
+        const W = parseFloat(document.getElementById('cruise_weight').value);
+        const rho = parseFloat(document.getElementById('cruise_rho').value);
+        const S = parseFloat(document.getElementById('cruise_area').value);
+        const CD0 = parseFloat(document.getElementById('cruise_cd0').value);
+        const AR = parseFloat(document.getElementById('cruise_ar').value);
+        const e = parseFloat(document.getElementById('cruise_e').value);
+        const resultBox = document.getElementById('cruise_result');
+
+        if (isNaN(W) || isNaN(rho) || isNaN(S) || isNaN(CD0) || isNaN(AR) || isNaN(e) || S <= 0 || rho <= 0) {
+            resultBox.innerHTML = 'Lütfen tüm alanları geçerli değerlerle doldurun.';
+            return;
+        }
+
+        // En iyi L/D oranı için CL değeri
+        const k = 1 / (Math.PI * e * AR);
+        const CL_best_LD = Math.sqrt(CD0 / k);
+
+        // En iyi L/D oranını sağlayan hız
+        const V_best_LD = Math.sqrt((2 * W) / (rho * S * CL_best_LD));
+
+        resultBox.innerHTML = `Tahmini Seyir Hızı: <strong>${V_best_LD.toFixed(2)} m/s</strong>`;
+    }
+
+
+    // --- Proje Kaydetme/Yükleme Mantığı ---
+    document.getElementById('clear-button').addEventListener('click', () => {
+        if (confirm('Kaydedilmiş tüm proje verilerini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
+            localStorage.removeItem('uavProjectData');
+            location.reload();
+        }
+    });
+
+    function loadProjectData() {
+        const projectDataString = localStorage.getItem('uavProjectData');
+        if (!projectDataString) return;
+
+        try {
+            const projectData = JSON.parse(projectDataString);
+            if (!projectData.summary) return;
+
+            const summaryData = projectData.summary;
+            Object.keys(summaryData).forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.value = summaryData[id];
+                }
+            });
+        } catch (e) {
+            console.error("Özet verileri yüklenirken hata oluştu:", e);
+        }
+    }
+
+    function saveProjectData() {
+        let projectData = {};
+        try {
+            const existingData = localStorage.getItem('uavProjectData');
+            if (existingData) {
+                projectData = JSON.parse(existingData);
+            }
+        } catch (e) {
+            projectData = {};
+        }
+
+        projectData.summary = {};
+        const inputIds = [
+            'taper_root_chord', 'taper_tip_chord',
+            'payload_mtow', 'payload_oew',
+            'cruise_weight', 'cruise_rho', 'cruise_area', 'cruise_cd0', 'cruise_ar', 'cruise_e'
+        ];
+
+        inputIds.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                projectData.summary[id] = element.value;
+            }
+        });
+
+        try {
+            localStorage.setItem('uavProjectData', JSON.stringify(projectData));
+        } catch (e) {
+            console.error("Projeyi kaydederken hata oluştu:", e);
+        }
+    }
+    </script>
+</body>
+</html>
